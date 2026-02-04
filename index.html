@@ -8,15 +8,34 @@
 </head>
 <body>
     <h1>Peacock 31</h1>
-    <button id="new-round-btn">New Round</button>
-    <button id="load-examples-btn">Load Example Hands</button>
+
+    <section id="game-controls">
+        <button id="start-game-btn">Start Round (3 Players)</button>
+        <button id="draw-stock-btn" disabled>Draw Stock</button>
+        <button id="draw-discard-btn" disabled>Draw Discard</button>
+    </section>
 
     <div id="game">
-        <p><strong>Your Hand:</strong> <span id="player-hand">—</span></p>
-        <p><strong>Score:</strong> <span id="player-score">—</span></p>
-        <p><strong>Discard:</strong> <span id="discard-top">—</span></p>
+        <p><strong>Current Player:</strong> <span id="current-player">—</span></p>
+        <p><strong>Phase:</strong> <span id="phase">—</span></p>
+        <hr>
+        <p><strong>Your Hand (Player 1):</strong></p>
+        <div id="player-hand"></div>
+        <p><strong>Your Score:</strong> <span id="player-score">—</span></p>
+        <hr>
+        <p><strong>Top Discard:</strong> <span id="discard-top">—</span></p>
         <p><strong>Stock:</strong> <span id="stock-count">—</span> cards</p>
+        <hr>
+        <div id="other-players"></div>
     </div>
+
+    <hr>
+    <section id="examples-section">
+        <h3>Example Hands (for testing scoring)</h3>
+        <button id="load-examples-btn">Load Example Hands</button>
+        <p><strong>Example Hand:</strong> <span id="example-hand">—</span></p>
+        <p><strong>Example Score:</strong> <span id="example-score">—</span></p>
+    </section>
 
     <script type="module" src="app.js"></script>
 </body>
