@@ -37,6 +37,24 @@ button:disabled {
     color: #666;
 }
 
+#round-summary {
+    margin-top: 1rem;
+    padding: 1rem;
+    background: #ffe6e6;
+    border: 1px solid #cc0000;
+    border-radius: 4px;
+}
+
+#round-summary h3 {
+    margin: 0 0 0.5rem 0;
+    color: #cc0000;
+}
+
+#round-summary ul {
+    margin: 0.5rem 0;
+    padding-left: 1.5rem;
+}
+
 #examples-section {
     margin-top: 1rem;
     padding-top: 1rem;

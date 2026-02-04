@@ -1,4 +1,5 @@
 import { createDeck, shuffle, deal } from './cards.js';
+import { scoreHand } from './rules.js';
 
 /**
  * Start a new game with the given number of players.
@@ -9,7 +10,7 @@ export function startGame(numPlayers) {
 
     const players = [];
     for (let i = 0; i < numPlayers; i++) {
-        players.push({ hand: deal(deck, 3) });
+        players.push({ hand: deal(deck, 3), quarters: 4 });
     }
 
     // Turn top card face-up to start the discard pile
@@ -20,7 +21,12 @@ export function startGame(numPlayers) {
         currentPlayerIndex: 0,
         phase: 'needDraw',
         stock: deck,
-        discard
+        discard,
+        // Round-ending fields
+        knocked: false,
+        knockerIndex: null,
+        finalTurnsRemaining: 0,
+        roundOver: false
     };
 }
 
@@ -78,9 +84,88 @@ export function discardCard(state, handIndex) {
     state.discard.push(card);
     state.phase = 'needDraw';
 
+    // Handle knock final turns
+    if (state.knocked && state.currentPlayerIndex !== state.knockerIndex) {
+        state.finalTurnsRemaining--;
+        if (state.finalTurnsRemaining <= 0) {
+            state.roundOver = true;
+        }
+    }
+
     // Advance to next player
     state.currentPlayerIndex = (state.currentPlayerIndex + 1) % state.players.length;
     return true;
+}
+
+/**
+ * Knock to end the round. Only works when:
+ * - It's the current player's turn
+ * - Phase is "needDraw"
+ * - No one has knocked yet
+ */
+export function knock(state) {
+    if (state.phase !== 'needDraw') {
+        return false;
+    }
+    if (state.knocked) {
+        return false;
+    }
+
+    state.knocked = true;
+    state.knockerIndex = state.currentPlayerIndex;
+    state.finalTurnsRemaining = state.players.length - 1;
+
+    // Advance to next player (knocker's turn is done)
+    state.currentPlayerIndex = (state.currentPlayerIndex + 1) % state.players.length;
+    return true;
+}
+
+/**
+ * Score the round and return results.
+ * Returns { scores: number[], losers: number[] }
+ */
+export function scoreRound(state) {
+    const scores = state.players.map(p => scoreHand(p.hand));
+    const minScore = Math.min(...scores);
+    const losers = scores
+        .map((score, index) => (score === minScore ? index : -1))
+        .filter(index => index !== -1);
+
+    return { scores, losers };
+}
+
+/**
+ * Apply round results by subtracting 1 quarter from each loser.
+ */
+export function applyRoundResults(state, losers) {
+    for (const loserIndex of losers) {
+        state.players[loserIndex].quarters = Math.max(0, state.players[loserIndex].quarters - 1);
+    }
+}
+
+/**
+ * Start the next round: re-deal hands/stock/discard, reset round fields.
+ * Preserves players' quarters.
+ */
+export function startNextRound(state) {
+    const deck = shuffle(createDeck());
+
+    // Re-deal hands
+    for (const player of state.players) {
+        player.hand = deal(deck, 3);
+    }
+
+    // Turn top card face-up to start the discard pile
+    state.discard = deal(deck, 1);
+    state.stock = deck;
+
+    // Reset round fields
+    state.currentPlayerIndex = 0;
+    state.phase = 'needDraw';
+    state.knocked = false;
+    state.knockerIndex = null;
+    state.finalTurnsRemaining = 0;
+    state.roundOver = false;
 }
 
 /**

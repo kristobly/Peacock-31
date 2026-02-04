@@ -10,16 +10,18 @@
     <h1>Peacock 31</h1>
 
     <section id="game-controls">
-        <button id="start-game-btn">Start Round (3 Players)</button>
+        <button id="start-game-btn">Start Game (3 Players)</button>
         <button id="draw-stock-btn" disabled>Draw Stock</button>
         <button id="draw-discard-btn" disabled>Draw Discard</button>
+        <button id="knock-btn" disabled>Knock</button>
+        <button id="next-round-btn" disabled>Next Round</button>
     </section>
 
     <div id="game">
         <p><strong>Current Player:</strong> <span id="current-player">—</span></p>
         <p><strong>Phase:</strong> <span id="phase">—</span></p>
         <hr>
-        <p><strong>Your Hand (Player 1):</strong></p>
+        <p><strong>Your Hand (Player 1):</strong> <span id="player-quarters"></span></p>
         <div id="player-hand"></div>
         <p><strong>Your Score:</strong> <span id="player-score">—</span></p>
         <hr>
@@ -28,6 +30,11 @@
         <hr>
         <div id="other-players"></div>
     </div>
+
+    <section id="round-summary" style="display: none;">
+        <h3>Round Over!</h3>
+        <div id="round-results"></div>
+    </section>
 
     <hr>
     <section id="examples-section">
