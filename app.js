@@ -22,6 +22,7 @@ const stockCountEl = document.getElementById('stock-count');
 const otherPlayersEl = document.getElementById('other-players');
 const roundSummaryEl = document.getElementById('round-summary');
 const roundResultsEl = document.getElementById('round-results');
+const turnLogEl = document.getElementById('turn-log');
 
 // DOM elements - examples section
 const loadExamplesBtn = document.getElementById('load-examples-btn');
@@ -30,6 +31,23 @@ const exampleScoreEl = document.getElementById('example-score');
 
 // Game state
 let gameState = null;
+let isAutoPlaying = false;
+const turnLog = [];
+const AI_DELAY_BONUS_MS = 1000;
+
+function log(msg) {
+    turnLog.unshift(msg);
+    if (turnLog.length > 12) turnLog.length = 12;
+    renderLog();
+}
+
+function renderLog() {
+    turnLogEl.innerHTML = turnLog.map(m => `<li>${m}</li>`).join('');
+}
+
+function sleep(ms) {
+    return new Promise(r => setTimeout(r, ms));
+}
 
 function render() {
     if (!gameState) {
@@ -47,6 +65,7 @@ function render() {
         hammerBtn.disabled = true;
         nextRoundBtn.disabled = true;
         roundSummaryEl.style.display = 'none';
+        renderLog();
         return;
     }
 
@@ -80,13 +99,13 @@ function render() {
         btn.className = 'card-btn';
 
         // Only clickable when it's Player 1's turn and phase is needDiscard and round not over
-        const canDiscard = gameState.currentPlayerIndex === 0 && gameState.phase === 'needDiscard' && !gameState.roundOver;
+        const canDiscard = !isAutoPlaying && gameState.currentPlayerIndex === 0 && gameState.phase === 'needDiscard' && !gameState.roundOver;
         btn.disabled = !canDiscard;
 
-        btn.addEventListener('click', () => {
+        btn.addEventListener('click', async () => {
             if (discardCard(gameState, index)) {
                 render();
-                runOtherPlayersTurns();
+                await runOtherPlayersTurns();
             }
         });
 
@@ -122,11 +141,11 @@ function render() {
     const isRoundOver = gameState.roundOver;
     const isGameOver = gameState.gameOver;
 
-    drawStockBtn.disabled = isGameOver || !(isPlayer1Turn && isDrawPhase && gameState.stock.length > 0 && !isRoundOver);
-    drawDiscardBtn.disabled = isGameOver || !(isPlayer1Turn && isDrawPhase && gameState.discard.length > 0 && !isRoundOver);
-    knockBtn.disabled = isGameOver || !(isPlayer1Turn && isDrawPhase && !gameState.knocked && !isRoundOver);
-    hammerBtn.disabled = isGameOver || !(isPlayer1Turn && isDrawPhase && gameState.hammerAvailable && !isRoundOver);
-    nextRoundBtn.disabled = isGameOver || !isRoundOver;
+    drawStockBtn.disabled = isAutoPlaying || isGameOver || !(isPlayer1Turn && isDrawPhase && gameState.stock.length > 0 && !isRoundOver);
+    drawDiscardBtn.disabled = isAutoPlaying || isGameOver || !(isPlayer1Turn && isDrawPhase && gameState.discard.length > 0 && !isRoundOver);
+    knockBtn.disabled = isAutoPlaying || isGameOver || !(isPlayer1Turn && isDrawPhase && !gameState.knocked && !isRoundOver);
+    hammerBtn.disabled = isAutoPlaying || isGameOver || !(isPlayer1Turn && isDrawPhase && gameState.hammerAvailable && !isRoundOver);
+    nextRoundBtn.disabled = isAutoPlaying || isGameOver || !isRoundOver;
     newGameBtn.style.display = 'inline-block';
 
     // Round summary
@@ -175,44 +194,55 @@ function render() {
     } else {
         roundSummaryEl.style.display = 'none';
     }
+
+    renderLog();
 }
 
-function runOtherPlayersTurns() {
-    // Auto-play other players with dumb strategy: draw from stock, discard random card
-    // If Player 1 is out, all turns are automated
+async function runOtherPlayersTurns() {
+    if (!gameState || gameState.roundOver || gameState.gameOver) return;
+
+    isAutoPlaying = true;
+    render();
+
     const player1Out = gameState.players[0].out;
+
     while ((player1Out || gameState.currentPlayerIndex !== 0) && !gameState.roundOver) {
-        // Draw from stock
+        const pi = gameState.currentPlayerIndex;
+
+        log(`Player ${pi + 1} thinking\u2026`);
+        await sleep(300 + AI_DELAY_BONUS_MS);
+
         if (!drawFromStock(gameState)) {
-            // Stock empty, round would end (not implemented yet)
             console.log('Stock empty during AI turn');
             break;
         }
 
-        // Check if round ended after draw (instant 31)
-        if (gameState.roundOver) {
-            break;
-        }
+        log(`Player ${pi + 1} drew from stock`);
+        render();
+        if (gameState.roundOver) break;
 
-        // Discard a random card (deterministic: always discard the last card)
-        const hand = gameState.players[gameState.currentPlayerIndex].hand;
-        const discardIndex = hand.length - 1; // Always discard last card for determinism
-        const prevPlayer = gameState.currentPlayerIndex;
+        await sleep(400 + AI_DELAY_BONUS_MS);
+
+        const hand = gameState.players[pi].hand;
+        const discardIndex = hand.length - 1;
+        const discardedCard = hand[discardIndex];
         discardCard(gameState, discardIndex);
 
-        console.log(`Player ${prevPlayer + 1} took a turn`);
+        log(`Player ${pi + 1} discarded ${cardLabel(discardedCard)}`);
+        render();
+        if (gameState.roundOver) break;
 
-        // Check if round ended after this discard
-        if (gameState.roundOver) {
-            break;
-        }
+        await sleep(500 + AI_DELAY_BONUS_MS);
     }
+
+    isAutoPlaying = false;
     render();
 }
 
 // Event listeners
 startGameBtn.addEventListener('click', () => {
     gameState = startGame(3);
+    turnLog.length = 0;
     console.log('Game started:', gameState);
     render();
 });
@@ -229,11 +259,11 @@ drawDiscardBtn.addEventListener('click', () => {
     }
 });
 
-knockBtn.addEventListener('click', () => {
+knockBtn.addEventListener('click', async () => {
     if (knock(gameState)) {
-        console.log('Player 1 knocked!');
+        log('Player 1 knocked!');
         render();
-        runOtherPlayersTurns();
+        await runOtherPlayersTurns();
     }
 });
 
@@ -253,12 +283,14 @@ nextRoundBtn.addEventListener('click', () => {
         return;
     }
     startNextRound(gameState);
+    turnLog.length = 0;
     console.log('Starting next round');
     render();
 });
 
 newGameBtn.addEventListener('click', () => {
     gameState = newGame(3);
+    turnLog.length = 0;
     console.log('New game started');
     render();
 });
