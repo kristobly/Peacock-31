@@ -1,5 +1,5 @@
 import { cardLabel } from './src/cards.js';
-import { startGame, drawFromStock, drawFromDiscard, discardCard, getTopDiscard, knock, hammer, scoreRound, applyRoundResults, startNextRound } from './src/game.js';
+import { startGame, drawFromStock, drawFromDiscard, discardCard, getTopDiscard, knock, hammer, scoreRound, applyRoundResults, startNextRound, newGame } from './src/game.js';
 import { scoreHand } from './src/rules.js';
 
 // DOM elements - game controls
@@ -9,6 +9,7 @@ const drawDiscardBtn = document.getElementById('draw-discard-btn');
 const knockBtn = document.getElementById('knock-btn');
 const hammerBtn = document.getElementById('hammer-btn');
 const nextRoundBtn = document.getElementById('next-round-btn');
+const newGameBtn = document.getElementById('new-game-btn');
 
 // DOM elements - game display
 const currentPlayerEl = document.getElementById('current-player');
@@ -55,14 +56,20 @@ function render() {
     if (gameState.knocked) {
         phaseText += ` (Knocked by Player ${gameState.knockerIndex + 1}, ${gameState.finalTurnsRemaining} turns left)`;
     }
-    if (gameState.roundOver) {
+    if (gameState.gameOver) {
+        phaseText = 'Game Over';
+    } else if (gameState.roundOver) {
         phaseText = 'Round Over';
     }
     phaseEl.textContent = phaseText;
 
     // Player 1's quarters
-    const p1Quarters = gameState.players[0].quarters;
-    playerQuartersEl.textContent = `[${p1Quarters} quarter${p1Quarters !== 1 ? 's' : ''}]`;
+    const p1 = gameState.players[0];
+    if (p1.out) {
+        playerQuartersEl.textContent = '[OUT]';
+    } else {
+        playerQuartersEl.textContent = `[${p1.quarters} quarter${p1.quarters !== 1 ? 's' : ''}]`;
+    }
 
     // Player 1's hand as clickable buttons
     const hand = gameState.players[0].hand;
@@ -96,12 +103,16 @@ function render() {
     // Stock count
     stockCountEl.textContent = gameState.stock.length;
 
-    // Other players (show hand sizes and quarters)
+    // Other players (show hand sizes and quarters, or OUT)
     otherPlayersEl.innerHTML = '';
     for (let i = 1; i < gameState.players.length; i++) {
         const p = document.createElement('p');
-        const quarters = gameState.players[i].quarters;
-        p.textContent = `Player ${i + 1}: ${gameState.players[i].hand.length} cards [${quarters} quarter${quarters !== 1 ? 's' : ''}]`;
+        const player = gameState.players[i];
+        if (player.out) {
+            p.textContent = `Player ${i + 1}: OUT`;
+        } else {
+            p.textContent = `Player ${i + 1}: ${player.hand.length} cards [${player.quarters} quarter${player.quarters !== 1 ? 's' : ''}]`;
+        }
         otherPlayersEl.appendChild(p);
     }
 
@@ -109,12 +120,14 @@ function render() {
     const isPlayer1Turn = gameState.currentPlayerIndex === 0;
     const isDrawPhase = gameState.phase === 'needDraw';
     const isRoundOver = gameState.roundOver;
+    const isGameOver = gameState.gameOver;
 
-    drawStockBtn.disabled = !(isPlayer1Turn && isDrawPhase && gameState.stock.length > 0 && !isRoundOver);
-    drawDiscardBtn.disabled = !(isPlayer1Turn && isDrawPhase && gameState.discard.length > 0 && !isRoundOver);
-    knockBtn.disabled = !(isPlayer1Turn && isDrawPhase && !gameState.knocked && !isRoundOver);
-    hammerBtn.disabled = !(isPlayer1Turn && isDrawPhase && gameState.hammerAvailable && !isRoundOver);
-    nextRoundBtn.disabled = !isRoundOver;
+    drawStockBtn.disabled = isGameOver || !(isPlayer1Turn && isDrawPhase && gameState.stock.length > 0 && !isRoundOver);
+    drawDiscardBtn.disabled = isGameOver || !(isPlayer1Turn && isDrawPhase && gameState.discard.length > 0 && !isRoundOver);
+    knockBtn.disabled = isGameOver || !(isPlayer1Turn && isDrawPhase && !gameState.knocked && !isRoundOver);
+    hammerBtn.disabled = isGameOver || !(isPlayer1Turn && isDrawPhase && gameState.hammerAvailable && !isRoundOver);
+    nextRoundBtn.disabled = isGameOver || !isRoundOver;
+    newGameBtn.style.display = 'inline-block';
 
     // Round summary
     if (isRoundOver) {
@@ -122,6 +135,11 @@ function render() {
         const { scores, losers } = scoreRound(gameState);
 
         let html = '';
+
+        // Game over winner message
+        if (isGameOver) {
+            html += `<p><strong style="font-size: 1.5em;">Winner: Player ${gameState.winnerIndex + 1}!</strong></p>`;
+        }
 
         // Show round result type message
         if (gameState.roundResultType === 'instant31') {
@@ -132,7 +150,12 @@ function render() {
 
         html += '<p><strong>Scores:</strong></p><ul>';
         for (let i = 0; i < gameState.players.length; i++) {
-            const handStr = gameState.players[i].hand.map(cardLabel).join(' ');
+            const player = gameState.players[i];
+            if (player.hand.length === 0) {
+                html += `<li>Player ${i + 1}: OUT</li>`;
+                continue;
+            }
+            const handStr = player.hand.map(cardLabel).join(' ');
             const isLoser = losers.includes(i);
             const isKnocker = i === gameState.knockerIndex;
             const isInstant31Winner = gameState.roundResultType === 'instant31' && i === gameState.instant31WinnerIndex;
@@ -140,6 +163,7 @@ function render() {
             if (isKnocker) label += ' [Knocker]';
             if (isInstant31Winner) label += ' [31!]';
             if (isLoser) label = `<strong>${label} — LOST</strong>`;
+            if (isLoser && player.quarters === 0) label += ' [ELIMINATED]';
             html += `<li>${label}</li>`;
         }
         html += '</ul>';
@@ -155,7 +179,9 @@ function render() {
 
 function runOtherPlayersTurns() {
     // Auto-play other players with dumb strategy: draw from stock, discard random card
-    while (gameState.currentPlayerIndex !== 0 && !gameState.roundOver) {
+    // If Player 1 is out, all turns are automated
+    const player1Out = gameState.players[0].out;
+    while ((player1Out || gameState.currentPlayerIndex !== 0) && !gameState.roundOver) {
         // Draw from stock
         if (!drawFromStock(gameState)) {
             // Stock empty, round would end (not implemented yet)
@@ -222,8 +248,18 @@ nextRoundBtn.addEventListener('click', () => {
     // Apply round results before starting next round
     const { losers } = scoreRound(gameState);
     applyRoundResults(gameState, losers);
+    if (gameState.gameOver) {
+        render();
+        return;
+    }
     startNextRound(gameState);
     console.log('Starting next round');
+    render();
+});
+
+newGameBtn.addEventListener('click', () => {
+    gameState = newGame(3);
+    console.log('New game started');
     render();
 });
 

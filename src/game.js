@@ -10,7 +10,7 @@ export function startGame(numPlayers) {
 
     const players = [];
     for (let i = 0; i < numPlayers; i++) {
-        players.push({ hand: deal(deck, 3), quarters: 4 });
+        players.push({ hand: deal(deck, 3), quarters: 4, out: false });
     }
 
     // Turn top card face-up to start the discard pile
@@ -29,7 +29,9 @@ export function startGame(numPlayers) {
         roundOver: false,
         roundResultType: 'normal',
         instant31WinnerIndex: null,
-        hammerAvailable: true
+        hammerAvailable: true,
+        gameOver: false,
+        winnerIndex: null
     };
 }
 
@@ -66,6 +68,7 @@ export function checkInstant31(state) {
     }
 
     for (let i = 0; i < state.players.length; i++) {
+        if (state.players[i].out) continue;
         if (hasInstant31(state.players[i].hand)) {
             state.roundOver = true;
             state.roundResultType = 'instant31';
@@ -74,6 +77,19 @@ export function checkInstant31(state) {
         }
     }
     return false;
+}
+
+/**
+ * Advance to the next active (non-out) player after the given index.
+ */
+function nextActivePlayer(state, fromIndex) {
+    let next = (fromIndex + 1) % state.players.length;
+    const start = next;
+    while (state.players[next].out) {
+        next = (next + 1) % state.players.length;
+        if (next === start) break; // safety: all out (shouldn't happen)
+    }
+    return next;
 }
 
 /**
@@ -142,8 +158,8 @@ export function discardCard(state, handIndex) {
         }
     }
 
-    // Advance to next player
-    state.currentPlayerIndex = (state.currentPlayerIndex + 1) % state.players.length;
+    // Advance to next active player (skip eliminated players)
+    state.currentPlayerIndex = nextActivePlayer(state, state.currentPlayerIndex);
 
     // Check for instant 31 after discard
     checkInstant31(state);
@@ -166,10 +182,11 @@ export function knock(state) {
 
     state.knocked = true;
     state.knockerIndex = state.currentPlayerIndex;
-    state.finalTurnsRemaining = state.players.length - 1;
+    // Only active (non-out) players besides the knocker get final turns
+    state.finalTurnsRemaining = state.players.filter(p => !p.out).length - 1;
 
-    // Advance to next player (knocker's turn is done)
-    state.currentPlayerIndex = (state.currentPlayerIndex + 1) % state.players.length;
+    // Advance to next active player (knocker's turn is done)
+    state.currentPlayerIndex = nextActivePlayer(state, state.currentPlayerIndex);
     return true;
 }
 
@@ -194,23 +211,26 @@ export function hammer(state) {
  * Returns { scores: number[], losers: number[] }
  */
 export function scoreRound(state) {
-    const scores = state.players.map(p => scoreHand(p.hand));
+    // Use hand length to determine who played this round (empty hand = didn't participate)
+    const played = state.players.map(p => p.hand.length > 0);
+    const scores = state.players.map(p => p.hand.length === 0 ? 0 : scoreHand(p.hand));
 
-    // For instant 31, all players except the winner are losers
+    // For instant 31, all participating players except the winner are losers
     if (state.roundResultType === 'instant31') {
         const losers = [];
         for (let i = 0; i < state.players.length; i++) {
-            if (i !== state.instant31WinnerIndex) {
+            if (i !== state.instant31WinnerIndex && played[i]) {
                 losers.push(i);
             }
         }
         return { scores, losers };
     }
 
-    // Normal scoring: lowest score(s) lose
-    const minScore = Math.min(...scores);
+    // Normal scoring: lowest score(s) among participating players lose
+    const activeScores = scores.filter((_, i) => played[i]);
+    const minScore = Math.min(...activeScores);
     const losers = scores
-        .map((score, index) => (score === minScore ? index : -1))
+        .map((score, index) => (played[index] && score === minScore ? index : -1))
         .filter(index => index !== -1);
 
     return { scores, losers };
@@ -222,6 +242,20 @@ export function scoreRound(state) {
 export function applyRoundResults(state, losers) {
     for (const loserIndex of losers) {
         state.players[loserIndex].quarters = Math.max(0, state.players[loserIndex].quarters - 1);
+        if (state.players[loserIndex].quarters === 0) {
+            state.players[loserIndex].out = true;
+        }
+    }
+
+    // Check if only one active player remains
+    const activePlayers = state.players
+        .map((p, i) => ({ index: i, active: !p.out }))
+        .filter(p => p.active);
+
+    if (activePlayers.length === 1) {
+        state.gameOver = true;
+        state.winnerIndex = activePlayers[0].index;
+        state.roundOver = true;
     }
 }
 
@@ -230,11 +264,17 @@ export function applyRoundResults(state, losers) {
  * Preserves players' quarters.
  */
 export function startNextRound(state) {
+    if (state.gameOver) return false;
+
     const deck = shuffle(createDeck());
 
-    // Re-deal hands
+    // Re-deal hands: only active players get cards
     for (const player of state.players) {
-        player.hand = deal(deck, 3);
+        if (player.out) {
+            player.hand = [];
+        } else {
+            player.hand = deal(deck, 3);
+        }
     }
 
     // Turn top card face-up to start the discard pile
@@ -242,7 +282,6 @@ export function startNextRound(state) {
     state.stock = deck;
 
     // Reset round fields
-    state.currentPlayerIndex = 0;
     state.phase = 'needDraw';
     state.knocked = false;
     state.knockerIndex = null;
@@ -251,6 +290,10 @@ export function startNextRound(state) {
     state.roundResultType = 'normal';
     state.instant31WinnerIndex = null;
     state.hammerAvailable = true;
+
+    // Start with the first active player
+    state.currentPlayerIndex = state.players.findIndex(p => !p.out);
+    return true;
 }
 
 /**
@@ -261,6 +304,13 @@ export function getTopDiscard(state) {
         return null;
     }
     return state.discard[state.discard.length - 1];
+}
+
+/**
+ * Create a brand new game, resetting all state including quarters/out.
+ */
+export function newGame(numPlayers) {
+    return startGame(numPlayers);
 }
 
 // Keep newRound for backward compatibility if needed
