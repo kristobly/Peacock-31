@@ -28,7 +28,8 @@ export function startGame(numPlayers) {
         finalTurnsRemaining: 0,
         roundOver: false,
         roundResultType: 'normal',
-        instant31WinnerIndex: null
+        instant31WinnerIndex: null,
+        hammerAvailable: true
     };
 }
 
@@ -87,6 +88,7 @@ export function drawFromStock(state) {
         return false;
     }
 
+    state.hammerAvailable = false;
     const card = state.stock.shift();
     state.players[state.currentPlayerIndex].hand.push(card);
     state.phase = 'needDiscard';
@@ -106,6 +108,7 @@ export function drawFromDiscard(state) {
         return false;
     }
 
+    state.hammerAvailable = false;
     const card = state.discard.pop();
     state.players[state.currentPlayerIndex].hand.push(card);
     state.phase = 'needDiscard';
@@ -171,6 +174,22 @@ export function knock(state) {
 }
 
 /**
+ * Hammer: Player 1 ends the round immediately on the first turn
+ * before anyone draws. Everyone scores their dealt hands.
+ */
+export function hammer(state) {
+    if (!state.hammerAvailable) return false;
+    if (state.currentPlayerIndex !== 0) return false;
+    if (state.phase !== 'needDraw') return false;
+    if (state.roundOver) return false;
+
+    state.roundOver = true;
+    state.roundResultType = 'hammer';
+    state.hammerAvailable = false;
+    return true;
+}
+
+/**
  * Score the round and return results.
  * Returns { scores: number[], losers: number[] }
  */
@@ -231,6 +250,7 @@ export function startNextRound(state) {
     state.roundOver = false;
     state.roundResultType = 'normal';
     state.instant31WinnerIndex = null;
+    state.hammerAvailable = true;
 }
 
 /**

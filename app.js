@@ -1,5 +1,5 @@
 import { cardLabel } from './src/cards.js';
-import { startGame, drawFromStock, drawFromDiscard, discardCard, getTopDiscard, knock, scoreRound, applyRoundResults, startNextRound } from './src/game.js';
+import { startGame, drawFromStock, drawFromDiscard, discardCard, getTopDiscard, knock, hammer, scoreRound, applyRoundResults, startNextRound } from './src/game.js';
 import { scoreHand } from './src/rules.js';
 
 // DOM elements - game controls
@@ -7,6 +7,7 @@ const startGameBtn = document.getElementById('start-game-btn');
 const drawStockBtn = document.getElementById('draw-stock-btn');
 const drawDiscardBtn = document.getElementById('draw-discard-btn');
 const knockBtn = document.getElementById('knock-btn');
+const hammerBtn = document.getElementById('hammer-btn');
 const nextRoundBtn = document.getElementById('next-round-btn');
 
 // DOM elements - game display
@@ -42,6 +43,7 @@ function render() {
         drawStockBtn.disabled = true;
         drawDiscardBtn.disabled = true;
         knockBtn.disabled = true;
+        hammerBtn.disabled = true;
         nextRoundBtn.disabled = true;
         roundSummaryEl.style.display = 'none';
         return;
@@ -111,6 +113,7 @@ function render() {
     drawStockBtn.disabled = !(isPlayer1Turn && isDrawPhase && gameState.stock.length > 0 && !isRoundOver);
     drawDiscardBtn.disabled = !(isPlayer1Turn && isDrawPhase && gameState.discard.length > 0 && !isRoundOver);
     knockBtn.disabled = !(isPlayer1Turn && isDrawPhase && !gameState.knocked && !isRoundOver);
+    hammerBtn.disabled = !(isPlayer1Turn && isDrawPhase && gameState.hammerAvailable && !isRoundOver);
     nextRoundBtn.disabled = !isRoundOver;
 
     // Round summary
@@ -120,9 +123,11 @@ function render() {
 
         let html = '';
 
-        // Show instant 31 message if applicable
+        // Show round result type message
         if (gameState.roundResultType === 'instant31') {
             html += `<p><strong>Instant 31: Player ${gameState.instant31WinnerIndex + 1}</strong></p>`;
+        } else if (gameState.roundResultType === 'hammer') {
+            html += `<p><strong>The Hammer! Player 1 slammed down their hand.</strong></p>`;
         }
 
         html += '<p><strong>Scores:</strong></p><ul>';
@@ -203,6 +208,13 @@ knockBtn.addEventListener('click', () => {
         console.log('Player 1 knocked!');
         render();
         runOtherPlayersTurns();
+    }
+});
+
+hammerBtn.addEventListener('click', () => {
+    if (hammer(gameState)) {
+        console.log('Player 1 used The Hammer!');
+        render();
     }
 });
 
