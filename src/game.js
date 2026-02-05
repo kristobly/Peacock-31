@@ -1,5 +1,5 @@
 import { createDeck, shuffle, deal } from './cards.js';
-import { scoreHand } from './rules.js';
+import { scoreHand, cardValue } from './rules.js';
 
 /**
  * Start a new game with the given number of players.
@@ -26,8 +26,53 @@ export function startGame(numPlayers) {
         knocked: false,
         knockerIndex: null,
         finalTurnsRemaining: 0,
-        roundOver: false
+        roundOver: false,
+        roundResultType: 'normal',
+        instant31WinnerIndex: null
     };
+}
+
+/**
+ * Compute suit totals for a hand.
+ * Returns an object like { '♠': 26, '♥': 10, ... }
+ */
+export function suitTotals(hand) {
+    const totals = {};
+    for (const card of hand) {
+        if (!totals[card.suit]) {
+            totals[card.suit] = 0;
+        }
+        totals[card.suit] += cardValue(card);
+    }
+    return totals;
+}
+
+/**
+ * Check if a hand has exactly 31 in any suit.
+ */
+export function hasInstant31(hand) {
+    const totals = suitTotals(hand);
+    return Object.values(totals).some(total => total === 31);
+}
+
+/**
+ * Check if any player has instant 31. If so, end the round.
+ * Returns true if instant 31 was found.
+ */
+export function checkInstant31(state) {
+    if (state.roundOver) {
+        return false;
+    }
+
+    for (let i = 0; i < state.players.length; i++) {
+        if (hasInstant31(state.players[i].hand)) {
+            state.roundOver = true;
+            state.roundResultType = 'instant31';
+            state.instant31WinnerIndex = i;
+            return true;
+        }
+    }
+    return false;
 }
 
 /**
@@ -45,6 +90,7 @@ export function drawFromStock(state) {
     const card = state.stock.shift();
     state.players[state.currentPlayerIndex].hand.push(card);
     state.phase = 'needDiscard';
+    checkInstant31(state);
     return true;
 }
 
@@ -63,6 +109,7 @@ export function drawFromDiscard(state) {
     const card = state.discard.pop();
     state.players[state.currentPlayerIndex].hand.push(card);
     state.phase = 'needDiscard';
+    checkInstant31(state);
     return true;
 }
 
@@ -94,6 +141,9 @@ export function discardCard(state, handIndex) {
 
     // Advance to next player
     state.currentPlayerIndex = (state.currentPlayerIndex + 1) % state.players.length;
+
+    // Check for instant 31 after discard
+    checkInstant31(state);
     return true;
 }
 
@@ -126,6 +176,19 @@ export function knock(state) {
  */
 export function scoreRound(state) {
     const scores = state.players.map(p => scoreHand(p.hand));
+
+    // For instant 31, all players except the winner are losers
+    if (state.roundResultType === 'instant31') {
+        const losers = [];
+        for (let i = 0; i < state.players.length; i++) {
+            if (i !== state.instant31WinnerIndex) {
+                losers.push(i);
+            }
+        }
+        return { scores, losers };
+    }
+
+    // Normal scoring: lowest score(s) lose
     const minScore = Math.min(...scores);
     const losers = scores
         .map((score, index) => (score === minScore ? index : -1))
@@ -166,6 +229,8 @@ export function startNextRound(state) {
     state.knockerIndex = null;
     state.finalTurnsRemaining = 0;
     state.roundOver = false;
+    state.roundResultType = 'normal';
+    state.instant31WinnerIndex = null;
 }
 
 /**

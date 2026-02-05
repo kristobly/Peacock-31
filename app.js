@@ -118,13 +118,22 @@ function render() {
         roundSummaryEl.style.display = 'block';
         const { scores, losers } = scoreRound(gameState);
 
-        let html = '<p><strong>Scores:</strong></p><ul>';
+        let html = '';
+
+        // Show instant 31 message if applicable
+        if (gameState.roundResultType === 'instant31') {
+            html += `<p><strong>Instant 31: Player ${gameState.instant31WinnerIndex + 1}</strong></p>`;
+        }
+
+        html += '<p><strong>Scores:</strong></p><ul>';
         for (let i = 0; i < gameState.players.length; i++) {
             const handStr = gameState.players[i].hand.map(cardLabel).join(' ');
             const isLoser = losers.includes(i);
             const isKnocker = i === gameState.knockerIndex;
+            const isInstant31Winner = gameState.roundResultType === 'instant31' && i === gameState.instant31WinnerIndex;
             let label = `Player ${i + 1}: ${scores[i]} points (${handStr})`;
             if (isKnocker) label += ' [Knocker]';
+            if (isInstant31Winner) label += ' [31!]';
             if (isLoser) label = `<strong>${label} — LOST</strong>`;
             html += `<li>${label}</li>`;
         }
@@ -146,6 +155,11 @@ function runOtherPlayersTurns() {
         if (!drawFromStock(gameState)) {
             // Stock empty, round would end (not implemented yet)
             console.log('Stock empty during AI turn');
+            break;
+        }
+
+        // Check if round ended after draw (instant 31)
+        if (gameState.roundOver) {
             break;
         }
 
