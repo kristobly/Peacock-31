@@ -35,6 +35,12 @@ let gameState = null;
 let isAutoPlaying = false;
 const turnLog = [];
 const AI_DELAY_BONUS_MS = 1000;
+const DEBUG_AI = false;
+
+// AI thresholds
+const GAMBLE_SCORE_THRESHOLD = 25;   // "strong" hand — might skip small discard cards
+const GAMBLE_CARD_MAX_VALUE = 3;     // only gamble past cards worth ≤ this
+const KNOCK_SCORE_THRESHOLD = 27;    // knock when hand is this good or better
 
 function log(msg) {
     turnLog.unshift(msg);
@@ -104,7 +110,9 @@ function render() {
         btn.disabled = !canDiscard;
 
         btn.addEventListener('click', async () => {
+            const discarded = hand[index];
             if (discardCard(gameState, index)) {
+                log(`Player 1 discarded ${cardLabel(discarded)}`);
                 render();
                 await runOtherPlayersTurns();
             }
@@ -209,24 +217,48 @@ async function runOtherPlayersTurns() {
 
     while ((player1Out || gameState.currentPlayerIndex !== 0) && !gameState.roundOver) {
         const pi = gameState.currentPlayerIndex;
+        const hand = gameState.players[pi].hand;
 
         log(`Player ${pi + 1} thinking\u2026`);
         await sleep(300 + AI_DELAY_BONUS_MS);
 
-        const hand = gameState.players[pi].hand;
-        const targetSuit = pickTargetSuit(hand, cardValue);
+        // --- Knock decision (before drawing) ---
+        const preDrawScore = scoreHand(hand);
+        if (!gameState.knocked && preDrawScore >= KNOCK_SCORE_THRESHOLD) {
+            knock(gameState);
+            log(`Player ${pi + 1} knocked`);
+            render();
+            if (gameState.roundOver) break;
+            await sleep(500 + AI_DELAY_BONUS_MS);
+            continue;   // knocking ends this player's turn
+        }
 
-        // Decide: draw from discard or stock
+        // --- Draw decision ---
+        const targetSuit = pickTargetSuit(hand, cardValue);
+        if (DEBUG_AI) console.log(`Player ${pi + 1} targets ${targetSuit}`);
+
         const topCard = getTopDiscard(gameState);
         let drewDiscard = false;
+
         if (topCard && topCard.suit === targetSuit) {
             const currentTargetTotal = hand
                 .filter(c => c.suit === targetSuit)
                 .reduce((sum, c) => sum + cardValue(c), 0);
-            if (currentTargetTotal + cardValue(topCard) > currentTargetTotal) {
-                drewDiscard = drawFromDiscard(gameState);
+            const discardHelps = currentTargetTotal + cardValue(topCard) > currentTargetTotal;
+
+            if (discardHelps) {
+                // Gamble: skip small helpful cards when hand is already strong
+                const shouldGamble = preDrawScore >= GAMBLE_SCORE_THRESHOLD
+                    && cardValue(topCard) <= GAMBLE_CARD_MAX_VALUE;
+
+                if (shouldGamble) {
+                    if (DEBUG_AI) console.log(`Player ${pi + 1} gambles — skips ${cardLabel(topCard)}`);
+                } else {
+                    drewDiscard = drawFromDiscard(gameState);
+                }
             }
         }
+
         if (!drewDiscard) {
             if (!drawFromStock(gameState)) {
                 console.log('Stock empty during AI turn');
@@ -244,8 +276,7 @@ async function runOtherPlayersTurns() {
 
         await sleep(400 + AI_DELAY_BONUS_MS);
 
-        log(`Player ${pi + 1} targets ${targetSuit}`);
-
+        // --- Discard decision ---
         const discardIndex = chooseDiscardIndex(hand, cardValue);
         const discardedCard = hand[discardIndex];
         discardCard(gameState, discardIndex);
@@ -269,21 +300,26 @@ startGameBtn.addEventListener('click', () => {
     render();
 });
 
-drawStockBtn.addEventListener('click', () => {
+drawStockBtn.addEventListener('click', async () => {
     if (drawFromStock(gameState)) {
+        log('Player 1 drew stock');
         render();
+        if (gameState.roundOver) return;
     }
 });
 
-drawDiscardBtn.addEventListener('click', () => {
+drawDiscardBtn.addEventListener('click', async () => {
+    const topCard = getTopDiscard(gameState);
     if (drawFromDiscard(gameState)) {
+        log(`Player 1 drew discard ${cardLabel(topCard)}`);
         render();
+        if (gameState.roundOver) return;
     }
 });
 
 knockBtn.addEventListener('click', async () => {
     if (knock(gameState)) {
-        log('Player 1 knocked!');
+        log('Player 1 knocked');
         render();
         await runOtherPlayersTurns();
     }
@@ -291,7 +327,7 @@ knockBtn.addEventListener('click', async () => {
 
 hammerBtn.addEventListener('click', () => {
     if (hammer(gameState)) {
-        console.log('Player 1 used The Hammer!');
+        log('Player 1 hammered');
         render();
     }
 });
