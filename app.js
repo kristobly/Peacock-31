@@ -213,19 +213,37 @@ async function runOtherPlayersTurns() {
         log(`Player ${pi + 1} thinking\u2026`);
         await sleep(300 + AI_DELAY_BONUS_MS);
 
-        if (!drawFromStock(gameState)) {
-            console.log('Stock empty during AI turn');
-            break;
+        const hand = gameState.players[pi].hand;
+        const targetSuit = pickTargetSuit(hand, cardValue);
+
+        // Decide: draw from discard or stock
+        const topCard = getTopDiscard(gameState);
+        let drewDiscard = false;
+        if (topCard && topCard.suit === targetSuit) {
+            const currentTargetTotal = hand
+                .filter(c => c.suit === targetSuit)
+                .reduce((sum, c) => sum + cardValue(c), 0);
+            if (currentTargetTotal + cardValue(topCard) > currentTargetTotal) {
+                drewDiscard = drawFromDiscard(gameState);
+            }
+        }
+        if (!drewDiscard) {
+            if (!drawFromStock(gameState)) {
+                console.log('Stock empty during AI turn');
+                break;
+            }
         }
 
-        log(`Player ${pi + 1} drew from stock`);
+        if (drewDiscard) {
+            log(`Player ${pi + 1} drew discard ${cardLabel(topCard)}`);
+        } else {
+            log(`Player ${pi + 1} drew stock`);
+        }
         render();
         if (gameState.roundOver) break;
 
         await sleep(400 + AI_DELAY_BONUS_MS);
 
-        const hand = gameState.players[pi].hand;
-        const targetSuit = pickTargetSuit(hand, cardValue);
         log(`Player ${pi + 1} targets ${targetSuit}`);
 
         const discardIndex = chooseDiscardIndex(hand, cardValue);
