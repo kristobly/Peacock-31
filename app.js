@@ -1,6 +1,7 @@
 import { cardLabel } from './src/cards.js';
 import { startGame, drawFromStock, drawFromDiscard, discardCard, getTopDiscard, knock, hammer, scoreRound, applyRoundResults, startNextRound, newGame } from './src/game.js';
-import { scoreHand } from './src/rules.js';
+import { scoreHand, cardValue } from './src/rules.js';
+import { pickTargetSuit, chooseDiscardIndex } from './src/ai.js';
 
 // DOM elements - game controls
 const startGameBtn = document.getElementById('start-game-btn');
@@ -224,7 +225,10 @@ async function runOtherPlayersTurns() {
         await sleep(400 + AI_DELAY_BONUS_MS);
 
         const hand = gameState.players[pi].hand;
-        const discardIndex = hand.length - 1;
+        const targetSuit = pickTargetSuit(hand, cardValue);
+        log(`Player ${pi + 1} targets ${targetSuit}`);
+
+        const discardIndex = chooseDiscardIndex(hand, cardValue);
         const discardedCard = hand[discardIndex];
         discardCard(gameState, discardIndex);
 
