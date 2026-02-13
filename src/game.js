@@ -17,6 +17,7 @@ export function startGame(numPlayers) {
     const discard = deal(deck, 1);
 
     return {
+        numPlayers,
         players,
         currentPlayerIndex: 0,
         phase: 'needDraw',

@@ -4,6 +4,7 @@ import { scoreHand, cardValue } from './src/rules.js';
 import { pickTargetSuit, chooseDiscardIndex } from './src/ai.js';
 
 // DOM elements - game controls
+const playerCountSelect = document.getElementById('player-count');
 const startGameBtn = document.getElementById('start-game-btn');
 const drawStockBtn = document.getElementById('draw-stock-btn');
 const drawDiscardBtn = document.getElementById('draw-discard-btn');
@@ -72,6 +73,7 @@ function render() {
         hammerBtn.disabled = true;
         nextRoundBtn.disabled = true;
         roundSummaryEl.style.display = 'none';
+        playerCountSelect.disabled = false;
         renderLog();
         return;
     }
@@ -143,6 +145,9 @@ function render() {
         }
         otherPlayersEl.appendChild(p);
     }
+
+    // Disable player count selector during an active game
+    playerCountSelect.disabled = !gameState.gameOver;
 
     // Enable/disable buttons based on state
     const isPlayer1Turn = gameState.currentPlayerIndex === 0;
@@ -294,7 +299,8 @@ async function runOtherPlayersTurns() {
 
 // Event listeners
 startGameBtn.addEventListener('click', () => {
-    gameState = startGame(3);
+    const numPlayers = parseInt(playerCountSelect.value, 10);
+    gameState = startGame(numPlayers);
     turnLog.length = 0;
     console.log('Game started:', gameState);
     render();
@@ -347,7 +353,8 @@ nextRoundBtn.addEventListener('click', () => {
 });
 
 newGameBtn.addEventListener('click', () => {
-    gameState = newGame(3);
+    const numPlayers = parseInt(playerCountSelect.value, 10);
+    gameState = newGame(numPlayers);
     turnLog.length = 0;
     console.log('New game started');
     render();

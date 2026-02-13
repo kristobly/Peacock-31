@@ -10,7 +10,15 @@
     <h1>Peacock 31</h1>
 
     <section id="game-controls">
-        <button id="start-game-btn">Start Game (3 Players)</button>
+        <label for="player-count">Players:</label>
+        <select id="player-count">
+            <option value="2">2</option>
+            <option value="3" selected>3</option>
+            <option value="4">4</option>
+            <option value="5">5</option>
+            <option value="6">6</option>
+        </select>
+        <button id="start-game-btn">Start Game</button>
         <button id="draw-stock-btn" disabled>Draw Stock</button>
         <button id="draw-discard-btn" disabled>Draw Discard</button>
         <button id="knock-btn" disabled>Knock</button>
