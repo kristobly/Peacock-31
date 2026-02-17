@@ -263,6 +263,17 @@ button:disabled {
     color: rgba(255, 255, 255, 0.5);
 }
 
+/* Clickable pile affordance */
+.pile-clickable {
+    cursor: pointer;
+    transition: box-shadow 0.15s ease, filter 0.15s ease;
+}
+
+.pile-clickable:hover {
+    filter: brightness(1.1);
+    box-shadow: 0 0 0 3px #f0d060, 3px 8px 18px rgba(0, 0, 0, 0.65);
+}
+
 /* === Card Faces and Backs (pile size) === */
 .pile-card {
     width: 100px;
@@ -585,4 +596,68 @@ button:disabled {
 
 #examples-section p {
     margin: 0.3rem 0;
+}
+
+/* === Ghost Card Animation === */
+#ghost-card {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100px;
+    height: 140px;
+    border-radius: 9px;
+    border: 2px solid #bbb;
+    box-shadow: 4px 8px 20px rgba(0, 0, 0, 0.7);
+    pointer-events: none;
+    z-index: 1000;
+    opacity: 0;
+    font-size: 1rem;
+    font-weight: bold;
+    font-family: 'Georgia', serif;
+    user-select: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Back visual: reuses .card-back background + ::after KB text */
+#ghost-card.card-back {
+    background:
+        repeating-linear-gradient(
+            45deg,
+            rgba(255, 255, 255, 0.05) 0px,
+            rgba(255, 255, 255, 0.05) 2px,
+            transparent 2px,
+            transparent 8px
+        ),
+        #00274C;
+}
+
+/* Face visual: reuses .card-face background; add layout overrides */
+#ghost-card.card-face {
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: stretch;
+    padding: 8px;
+}
+
+/* === Action Label === */
+.action-label {
+    position: fixed;
+    z-index: 1001;
+    pointer-events: none;
+    background: rgba(0, 0, 0, 0.82);
+    color: #fff;
+    font-size: 0.82rem;
+    font-weight: bold;
+    font-family: 'Georgia', serif;
+    padding: 4px 10px;
+    border-radius: 12px;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    white-space: nowrap;
+}
+
+.action-label.visible {
+    opacity: 1;
 }

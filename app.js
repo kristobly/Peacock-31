@@ -26,6 +26,8 @@ const playerZoneEl = document.getElementById('player-zone');
 const roundSummaryEl = document.getElementById('round-summary');
 const roundResultsEl = document.getElementById('round-results');
 const turnLogEl = document.getElementById('turn-log');
+const ghostCardEl = document.getElementById('ghost-card');
+const actionLabelEl = document.getElementById('action-label');
 
 // DOM elements - examples section
 const loadExamplesBtn = document.getElementById('load-examples-btn');
@@ -68,6 +70,86 @@ function sleep(ms) {
     return new Promise(r => setTimeout(r, ms));
 }
 
+// Animation state
+let animationInProgress = false;
+let actionLabelTimeout = null;
+
+// Returns the DOM element representing the player's zone on the table.
+// Player 0 → #player-zone; others → .opponent-area[data-player-index]
+function getPlayerAreaEl(playerIndex) {
+    if (playerIndex === 0) return playerZoneEl;
+    return otherPlayersEl.querySelector(`[data-player-index="${playerIndex}"]`);
+}
+
+// Fly a ghost card from fromEl to toEl, showing a card back or a card face.
+// isBack: true → Michigan blue back; false → card face (requires card).
+async function animateCardMove(fromEl, toEl, { isBack, card = null }) {
+    if (!fromEl || !toEl) return;
+    if (animationInProgress) {
+        // Skip rather than overlap; tiny pause so callers don't race
+        await sleep(50);
+        return;
+    }
+    animationInProgress = true;
+
+    const fromRect = fromEl.getBoundingClientRect();
+    const toRect = toEl.getBoundingClientRect();
+
+    // Set visual content
+    ghostCardEl.className = isBack
+        ? 'card-back'
+        : ('card-face' + (card && isRedSuit(card.suit) ? ' red-suit' : ''));
+    ghostCardEl.innerHTML = (!isBack && card) ? cardFaceHtml(card) : '';
+
+    // Snap to start (no transition), invisible
+    ghostCardEl.style.transition = 'none';
+    ghostCardEl.style.transform = `translate(${fromRect.left}px, ${fromRect.top}px)`;
+    ghostCardEl.style.opacity = '0';
+
+    // Force reflow so the snap takes effect before we start the transition
+    ghostCardEl.offsetHeight;
+
+    // Fly to destination with fade-in
+    ghostCardEl.style.transition = 'transform 0.28s ease, opacity 0.12s ease';
+    ghostCardEl.style.opacity = '1';
+    ghostCardEl.style.transform = `translate(${toRect.left}px, ${toRect.top}px)`;
+
+    await sleep(300); // slightly longer than 280ms transition
+
+    // Quick fade-out at the destination
+    ghostCardEl.style.transition = 'opacity 0.1s ease';
+    ghostCardEl.style.opacity = '0';
+    await sleep(110);
+
+    animationInProgress = false;
+}
+
+// Show a brief action label near the given player's zone for ~800 ms.
+function showAction(playerIndex, text) {
+    const playerEl = getPlayerAreaEl(playerIndex);
+    if (!playerEl) return;
+
+    if (actionLabelTimeout) {
+        clearTimeout(actionLabelTimeout);
+        actionLabelTimeout = null;
+    }
+
+    const rect = playerEl.getBoundingClientRect();
+    actionLabelEl.textContent = text;
+    actionLabelEl.style.left = `${rect.left + rect.width / 2}px`;
+    actionLabelEl.style.transform = 'translateX(-50%)';
+    // Player 1 is at the bottom — label above; opponents are at top — label below
+    actionLabelEl.style.top = playerIndex === 0
+        ? `${rect.top - 34}px`
+        : `${rect.bottom + 8}px`;
+
+    actionLabelEl.classList.add('visible');
+    actionLabelTimeout = setTimeout(() => {
+        actionLabelEl.classList.remove('visible');
+        actionLabelTimeout = null;
+    }, 800);
+}
+
 function render() {
     if (!gameState) {
         playerZoneEl.classList.remove('active-turn');
@@ -86,6 +168,8 @@ function render() {
         knockBtn.disabled = true;
         hammerBtn.disabled = true;
         nextRoundBtn.disabled = true;
+        stockDisplayEl.classList.remove('pile-clickable');
+        discardTopEl.classList.remove('pile-clickable');
         roundSummaryEl.style.display = 'none';
         startGameBtn.textContent = 'Start Game';
         renderLog();
@@ -131,11 +215,20 @@ function render() {
         btn.disabled = !canDiscard;
 
         btn.addEventListener('click', async () => {
+            if (isAutoPlaying || animationInProgress) return;
+            isAutoPlaying = true;
             const discarded = hand[index];
-            if (discardCard(gameState, index)) {
+            const anim = animateCardMove(btn, discardTopEl, { isBack: false, card: discarded });
+            showAction(0, `Discarded ${cardLabel(discarded)}`);
+            const success = discardCard(gameState, index);
+            await anim;
+            if (success) {
                 log(`Player 1 discarded ${cardLabel(discarded)}`);
                 render();
                 await runOtherPlayersTurns();
+            } else {
+                isAutoPlaying = false;
+                render();
             }
         });
 
@@ -167,6 +260,7 @@ function render() {
         area.className = 'opponent-area' +
             (player.out ? ' out' : '') +
             (i === gameState.currentPlayerIndex && !gameState.roundOver ? ' active-turn' : '');
+        area.dataset.playerIndex = i;
 
         const name = document.createElement('div');
         name.className = 'opponent-name';
@@ -213,6 +307,9 @@ function render() {
     knockBtn.disabled = isAutoPlaying || isGameOver || !(isPlayer1Turn && isDrawPhase && !gameState.knocked && !isRoundOver);
     hammerBtn.disabled = isAutoPlaying || isGameOver || !(isPlayer1Turn && isDrawPhase && gameState.hammerAvailable && !isRoundOver);
     nextRoundBtn.disabled = isAutoPlaying || isGameOver || !isRoundOver;
+
+    stockDisplayEl.classList.toggle('pile-clickable', !drawStockBtn.disabled);
+    discardTopEl.classList.toggle('pile-clickable', !drawDiscardBtn.disabled);
 
     // Round summary
     if (isRoundOver) {
@@ -298,6 +395,7 @@ async function runOtherPlayersTurns() {
         if (!gameState.knocked && preDrawScore >= KNOCK_SCORE_THRESHOLD) {
             knock(gameState);
             log(`Player ${pi + 1} knocked`);
+            showAction(pi, 'Knocked');
             render();
             if (gameState.roundOver) break;
             await sleep(500 + AI_DELAY_BONUS_MS);
@@ -310,6 +408,7 @@ async function runOtherPlayersTurns() {
 
         const topCard = getTopDiscard(gameState);
         let drewDiscard = false;
+        const opponentDrawEl = getPlayerAreaEl(pi);
 
         if (topCard && topCard.suit === targetSuit) {
             const currentTargetTotal = hand
@@ -325,7 +424,12 @@ async function runOtherPlayersTurns() {
                 if (shouldGamble) {
                     if (DEBUG_AI) console.log(`Player ${pi + 1} gambles — skips ${cardLabel(topCard)}`);
                 } else {
-                    drewDiscard = drawFromDiscard(gameState);
+                    if (drawFromDiscard(gameState)) {
+                        drewDiscard = true;
+                        const drawAnim = animateCardMove(discardTopEl, opponentDrawEl, { isBack: false, card: topCard });
+                        showAction(pi, `Drew discard ${cardLabel(topCard)}`);
+                        await drawAnim;
+                    }
                 }
             }
         }
@@ -335,6 +439,9 @@ async function runOtherPlayersTurns() {
                 console.log('Stock empty during AI turn');
                 break;
             }
+            const drawAnim = animateCardMove(stockDisplayEl, opponentDrawEl, { isBack: true });
+            showAction(pi, 'Drew stock');
+            await drawAnim;
         }
 
         if (drewDiscard) {
@@ -350,7 +457,12 @@ async function runOtherPlayersTurns() {
         // --- Discard decision ---
         const discardIndex = chooseDiscardIndex(hand, cardValue);
         const discardedCard = hand[discardIndex];
+        // Re-query opponent area after render() — previous reference may be stale
+        const opponentDiscardEl = getPlayerAreaEl(pi);
+        const discardAnim = animateCardMove(opponentDiscardEl, discardTopEl, { isBack: false, card: discardedCard });
+        showAction(pi, `Discarded ${cardLabel(discardedCard)}`);
         discardCard(gameState, discardIndex);
+        await discardAnim;
 
         log(`Player ${pi + 1} discarded ${cardLabel(discardedCard)}`);
         render();
@@ -374,7 +486,14 @@ startGameBtn.addEventListener('click', () => {
 });
 
 drawStockBtn.addEventListener('click', async () => {
-    if (drawFromStock(gameState)) {
+    if (isAutoPlaying || animationInProgress) return;
+    isAutoPlaying = true;
+    const anim = animateCardMove(stockDisplayEl, playerHandEl, { isBack: true });
+    showAction(0, 'Drew stock');
+    const success = drawFromStock(gameState);
+    await anim;
+    isAutoPlaying = false;
+    if (success) {
         log('Player 1 drew stock');
         render();
         if (gameState.roundOver) return;
@@ -382,12 +501,27 @@ drawStockBtn.addEventListener('click', async () => {
 });
 
 drawDiscardBtn.addEventListener('click', async () => {
+    if (isAutoPlaying || animationInProgress) return;
+    isAutoPlaying = true;
     const topCard = getTopDiscard(gameState);
-    if (drawFromDiscard(gameState)) {
+    const anim = animateCardMove(discardTopEl, playerHandEl, { isBack: false, card: topCard });
+    showAction(0, `Drew discard ${cardLabel(topCard)}`);
+    const success = drawFromDiscard(gameState);
+    await anim;
+    isAutoPlaying = false;
+    if (success) {
         log(`Player 1 drew discard ${cardLabel(topCard)}`);
         render();
         if (gameState.roundOver) return;
     }
+});
+
+stockDisplayEl.addEventListener('click', () => {
+    if (!drawStockBtn.disabled) drawStockBtn.click();
+});
+
+discardTopEl.addEventListener('click', () => {
+    if (!drawDiscardBtn.disabled) drawDiscardBtn.click();
 });
 
 knockBtn.addEventListener('click', async () => {
