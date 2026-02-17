@@ -7,55 +7,80 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <h1>Peacock 31</h1>
+    <div id="app">
+        <header id="app-header">
+            <h1>Peacock 31</h1>
+            <section id="game-controls">
+                <label for="player-count">Players:</label>
+                <select id="player-count">
+                    <option value="2">2</option>
+                    <option value="3" selected>3</option>
+                    <option value="4">4</option>
+                    <option value="5">5</option>
+                    <option value="6">6</option>
+                </select>
+                <button id="start-game-btn">Start Game</button>
+                <span class="controls-sep">|</span>
+                <button id="draw-stock-btn" disabled>Draw Stock</button>
+                <button id="draw-discard-btn" disabled>Draw Discard</button>
+                <button id="knock-btn" disabled>Knock</button>
+                <button id="hammer-btn" disabled>Hammer</button>
+                <button id="next-round-btn" disabled>Next Round</button>
+            </section>
+        </header>
 
-    <section id="game-controls">
-        <label for="player-count">Players:</label>
-        <select id="player-count">
-            <option value="2">2</option>
-            <option value="3" selected>3</option>
-            <option value="4">4</option>
-            <option value="5">5</option>
-            <option value="6">6</option>
-        </select>
-        <button id="start-game-btn">Start Game</button>
-        <button id="draw-stock-btn" disabled>Draw Stock</button>
-        <button id="draw-discard-btn" disabled>Draw Discard</button>
-        <button id="knock-btn" disabled>Knock</button>
-        <button id="hammer-btn" disabled>Hammer</button>
-        <button id="next-round-btn" disabled>Next Round</button>
-        <button id="new-game-btn" style="display: none;">New Game</button>
-    </section>
+        <div id="status-bar">
+            <span>Turn: <strong id="current-player">—</strong></span>
+            <span>Phase: <strong id="phase">—</strong></span>
+        </div>
 
-    <div id="game">
-        <p><strong>Current Player:</strong> <span id="current-player">—</span></p>
-        <p><strong>Phase:</strong> <span id="phase">—</span></p>
-        <hr>
-        <p><strong>Your Hand (Player 1):</strong> <span id="player-quarters"></span></p>
-        <div id="player-hand"></div>
-        <p><strong>Your Score:</strong> <span id="player-score">—</span></p>
-        <hr>
-        <p><strong>Top Discard:</strong> <span id="discard-top">—</span></p>
-        <p><strong>Stock:</strong> <span id="stock-count">—</span> cards</p>
-        <hr>
-        <div id="other-players"></div>
-        <hr>
-        <p><strong>Turn Log:</strong></p>
-        <ul id="turn-log"></ul>
+        <div id="table">
+            <!-- Opponents row (top of table) -->
+            <div id="opponents-zone">
+                <div id="other-players"></div>
+            </div>
+
+            <!-- Center: stock pile + discard pile -->
+            <div id="piles-zone">
+                <div class="pile-area">
+                    <div class="pile-label">Stock</div>
+                    <div class="card-back pile-card" id="stock-display"></div>
+                    <div class="pile-count"><span id="stock-count">—</span> cards</div>
+                </div>
+                <div class="pile-area">
+                    <div class="pile-label">Discard</div>
+                    <div class="card-face pile-card" id="discard-top">—</div>
+                </div>
+            </div>
+
+            <!-- Player 1 zone (bottom of table) -->
+            <div id="player-zone">
+                <div id="player-info">
+                    <span class="player-label">You (Player 1)</span>
+                    <span id="player-quarters"></span>
+                    <span class="score-label">Score: <strong id="player-score">—</strong></span>
+                </div>
+                <div id="player-hand"></div>
+            </div>
+        </div>
+
+        <section id="round-summary" style="display: none;">
+            <h3>Round Over!</h3>
+            <div id="round-results"></div>
+        </section>
+
+        <div id="turn-log-section">
+            <p><strong>Turn Log:</strong></p>
+            <ul id="turn-log"></ul>
+        </div>
+
+        <section id="examples-section">
+            <h3>Example Hands (for testing scoring)</h3>
+            <button id="load-examples-btn">Load Examples</button>
+            <p>Hand: <span id="example-hand">—</span></p>
+            <p>Score: <span id="example-score">—</span></p>
+        </section>
     </div>
-
-    <section id="round-summary" style="display: none;">
-        <h3>Round Over!</h3>
-        <div id="round-results"></div>
-    </section>
-
-    <hr>
-    <section id="examples-section">
-        <h3>Example Hands (for testing scoring)</h3>
-        <button id="load-examples-btn">Load Example Hands</button>
-        <p><strong>Example Hand:</strong> <span id="example-hand">—</span></p>
-        <p><strong>Example Score:</strong> <span id="example-score">—</span></p>
-    </section>
 
     <script type="module" src="app.js"></script>
 </body>

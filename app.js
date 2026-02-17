@@ -1,5 +1,5 @@
 import { cardLabel } from './src/cards.js';
-import { startGame, drawFromStock, drawFromDiscard, discardCard, getTopDiscard, knock, hammer, scoreRound, applyRoundResults, startNextRound, newGame } from './src/game.js';
+import { startGame, drawFromStock, drawFromDiscard, discardCard, getTopDiscard, knock, hammer, scoreRound, applyRoundResults, startNextRound } from './src/game.js';
 import { scoreHand, cardValue } from './src/rules.js';
 import { pickTargetSuit, chooseDiscardIndex } from './src/ai.js';
 
@@ -11,7 +11,6 @@ const drawDiscardBtn = document.getElementById('draw-discard-btn');
 const knockBtn = document.getElementById('knock-btn');
 const hammerBtn = document.getElementById('hammer-btn');
 const nextRoundBtn = document.getElementById('next-round-btn');
-const newGameBtn = document.getElementById('new-game-btn');
 
 // DOM elements - game display
 const currentPlayerEl = document.getElementById('current-player');
@@ -21,6 +20,7 @@ const playerScoreEl = document.getElementById('player-score');
 const playerQuartersEl = document.getElementById('player-quarters');
 const discardTopEl = document.getElementById('discard-top');
 const stockCountEl = document.getElementById('stock-count');
+const stockDisplayEl = document.getElementById('stock-display');
 const otherPlayersEl = document.getElementById('other-players');
 const roundSummaryEl = document.getElementById('round-summary');
 const roundResultsEl = document.getElementById('round-results');
@@ -42,6 +42,10 @@ const DEBUG_AI = false;
 const GAMBLE_SCORE_THRESHOLD = 25;   // "strong" hand — might skip small discard cards
 const GAMBLE_CARD_MAX_VALUE = 3;     // only gamble past cards worth ≤ this
 const KNOCK_SCORE_THRESHOLD = 27;    // knock when hand is this good or better
+
+function isRedSuit(suit) {
+    return suit === '♥' || suit === '♦';
+}
 
 function log(msg) {
     turnLog.unshift(msg);
@@ -65,7 +69,9 @@ function render() {
         playerScoreEl.textContent = '—';
         playerQuartersEl.textContent = '';
         discardTopEl.textContent = '—';
+        discardTopEl.className = 'card-face pile-card';
         stockCountEl.textContent = '—';
+        stockDisplayEl.style.opacity = '0.35';
         otherPlayersEl.innerHTML = '';
         drawStockBtn.disabled = true;
         drawDiscardBtn.disabled = true;
@@ -73,10 +79,12 @@ function render() {
         hammerBtn.disabled = true;
         nextRoundBtn.disabled = true;
         roundSummaryEl.style.display = 'none';
-        playerCountSelect.disabled = false;
+        startGameBtn.textContent = 'Start Game';
         renderLog();
         return;
     }
+
+    startGameBtn.textContent = 'Restart';
 
     // Current player and phase
     currentPlayerEl.textContent = `Player ${gameState.currentPlayerIndex + 1}`;
@@ -99,13 +107,13 @@ function render() {
         playerQuartersEl.textContent = `[${p1.quarters} quarter${p1.quarters !== 1 ? 's' : ''}]`;
     }
 
-    // Player 1's hand as clickable buttons
+    // Player 1's hand as clickable card buttons
     const hand = gameState.players[0].hand;
     playerHandEl.innerHTML = '';
     hand.forEach((card, index) => {
         const btn = document.createElement('button');
         btn.textContent = cardLabel(card);
-        btn.className = 'card-btn';
+        btn.className = 'card-btn' + (isRedSuit(card.suit) ? ' red-suit' : '');
 
         // Only clickable when it's Player 1's turn and phase is needDiscard and round not over
         const canDiscard = !isAutoPlaying && gameState.currentPlayerIndex === 0 && gameState.phase === 'needDiscard' && !gameState.roundOver;
@@ -129,25 +137,47 @@ function render() {
     // Discard pile top
     const topDiscard = getTopDiscard(gameState);
     discardTopEl.textContent = topDiscard ? cardLabel(topDiscard) : '—';
+    discardTopEl.className = 'card-face pile-card' + (topDiscard && isRedSuit(topDiscard.suit) ? ' red-suit' : '');
 
-    // Stock count
+    // Stock pile
     stockCountEl.textContent = gameState.stock.length;
+    stockDisplayEl.style.opacity = gameState.stock.length > 0 ? '1' : '0.25';
 
-    // Other players (show hand sizes and quarters, or OUT)
+    // Other players: show face-down card backs + quarters
     otherPlayersEl.innerHTML = '';
     for (let i = 1; i < gameState.players.length; i++) {
-        const p = document.createElement('p');
         const player = gameState.players[i];
-        if (player.out) {
-            p.textContent = `Player ${i + 1}: OUT`;
-        } else {
-            p.textContent = `Player ${i + 1}: ${player.hand.length} cards [${player.quarters} quarter${player.quarters !== 1 ? 's' : ''}]`;
-        }
-        otherPlayersEl.appendChild(p);
-    }
+        const area = document.createElement('div');
+        area.className = 'opponent-area' + (player.out ? ' out' : '');
 
-    // Disable player count selector during an active game
-    playerCountSelect.disabled = !gameState.gameOver;
+        const name = document.createElement('div');
+        name.className = 'opponent-name';
+        name.textContent = `Player ${i + 1}`;
+        area.appendChild(name);
+
+        if (!player.out) {
+            const cards = document.createElement('div');
+            cards.className = 'opponent-cards';
+            for (let c = 0; c < player.hand.length; c++) {
+                const back = document.createElement('div');
+                back.className = 'card-back-sm';
+                cards.appendChild(back);
+            }
+            area.appendChild(cards);
+
+            const qtrs = document.createElement('div');
+            qtrs.className = 'opponent-quarters';
+            qtrs.textContent = `${player.quarters} quarter${player.quarters !== 1 ? 's' : ''}`;
+            area.appendChild(qtrs);
+        } else {
+            const out = document.createElement('div');
+            out.className = 'opponent-quarters';
+            out.textContent = 'OUT';
+            area.appendChild(out);
+        }
+
+        otherPlayersEl.appendChild(area);
+    }
 
     // Enable/disable buttons based on state
     const isPlayer1Turn = gameState.currentPlayerIndex === 0;
@@ -160,7 +190,6 @@ function render() {
     knockBtn.disabled = isAutoPlaying || isGameOver || !(isPlayer1Turn && isDrawPhase && !gameState.knocked && !isRoundOver);
     hammerBtn.disabled = isAutoPlaying || isGameOver || !(isPlayer1Turn && isDrawPhase && gameState.hammerAvailable && !isRoundOver);
     nextRoundBtn.disabled = isAutoPlaying || isGameOver || !isRoundOver;
-    newGameBtn.style.display = 'inline-block';
 
     // Round summary
     if (isRoundOver) {
@@ -297,7 +326,7 @@ async function runOtherPlayersTurns() {
     render();
 }
 
-// Event listeners
+// Single start/restart handler — always starts a fresh game
 startGameBtn.addEventListener('click', () => {
     const numPlayers = parseInt(playerCountSelect.value, 10);
     gameState = startGame(numPlayers);
@@ -353,15 +382,6 @@ nextRoundBtn.addEventListener('click', async () => {
     console.log('Starting next round');
     render();
     await runOtherPlayersTurns();
-});
-
-newGameBtn.addEventListener('click', () => {
-    const numPlayers = parseInt(playerCountSelect.value, 10);
-    gameState = newGame(numPlayers);
-    turnLog.length = 0;
-    log(`Round starts with Player ${gameState.startingPlayerIndex + 1}`);
-    console.log('New game started');
-    render();
 });
 
 // Example hands for verification (separate section)
