@@ -178,7 +178,7 @@ function render() {
         if (gameState.roundResultType === 'instant31') {
             html += `<p><strong>Instant 31: Player ${gameState.instant31WinnerIndex + 1}</strong></p>`;
         } else if (gameState.roundResultType === 'hammer') {
-            html += `<p><strong>The Hammer! Player 1 slammed down their hand.</strong></p>`;
+            html += `<p><strong>The Hammer! Player ${gameState.startingPlayerIndex + 1} slammed down their hand.</strong></p>`;
         }
 
         html += '<p><strong>Scores:</strong></p><ul>';
@@ -302,6 +302,7 @@ startGameBtn.addEventListener('click', () => {
     const numPlayers = parseInt(playerCountSelect.value, 10);
     gameState = startGame(numPlayers);
     turnLog.length = 0;
+    log(`Round starts with Player ${gameState.startingPlayerIndex + 1}`);
     console.log('Game started:', gameState);
     render();
 });
@@ -338,7 +339,7 @@ hammerBtn.addEventListener('click', () => {
     }
 });
 
-nextRoundBtn.addEventListener('click', () => {
+nextRoundBtn.addEventListener('click', async () => {
     // Apply round results before starting next round
     const { losers } = scoreRound(gameState);
     applyRoundResults(gameState, losers);
@@ -348,14 +349,17 @@ nextRoundBtn.addEventListener('click', () => {
     }
     startNextRound(gameState);
     turnLog.length = 0;
+    log(`Round starts with Player ${gameState.startingPlayerIndex + 1}`);
     console.log('Starting next round');
     render();
+    await runOtherPlayersTurns();
 });
 
 newGameBtn.addEventListener('click', () => {
     const numPlayers = parseInt(playerCountSelect.value, 10);
     gameState = newGame(numPlayers);
     turnLog.length = 0;
+    log(`Round starts with Player ${gameState.startingPlayerIndex + 1}`);
     console.log('New game started');
     render();
 });

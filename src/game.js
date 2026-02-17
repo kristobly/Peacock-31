@@ -19,6 +19,7 @@ export function startGame(numPlayers) {
     return {
         numPlayers,
         players,
+        startingPlayerIndex: 0,
         currentPlayerIndex: 0,
         phase: 'needDraw',
         stock: deck,
@@ -192,12 +193,12 @@ export function knock(state) {
 }
 
 /**
- * Hammer: Player 1 ends the round immediately on the first turn
+ * Hammer: the starting player ends the round immediately on the first turn
  * before anyone draws. Everyone scores their dealt hands.
  */
 export function hammer(state) {
     if (!state.hammerAvailable) return false;
-    if (state.currentPlayerIndex !== 0) return false;
+    if (state.currentPlayerIndex !== state.startingPlayerIndex) return false;
     if (state.phase !== 'needDraw') return false;
     if (state.roundOver) return false;
 
@@ -292,8 +293,9 @@ export function startNextRound(state) {
     state.instant31WinnerIndex = null;
     state.hammerAvailable = true;
 
-    // Start with the first active player
-    state.currentPlayerIndex = state.players.findIndex(p => !p.out);
+    // Rotate starting player to the next active player
+    state.startingPlayerIndex = nextActivePlayer(state, state.startingPlayerIndex);
+    state.currentPlayerIndex = state.startingPlayerIndex;
     return true;
 }
 
