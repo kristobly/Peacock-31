@@ -157,6 +157,12 @@ button:disabled {
     opacity: 0.45;
 }
 
+/* Active turn highlight */
+.active-turn {
+    box-shadow: 0 0 0 3px #f0d060, 0 0 18px rgba(240, 208, 96, 0.45);
+    border-radius: 8px;
+}
+
 .opponent-name {
     font-size: 0.95rem;
     color: #ccc;
@@ -174,16 +180,60 @@ button:disabled {
 .card-back-sm {
     width: 44px;
     height: 62px;
-    background: linear-gradient(145deg, #1c2496 0%, #3344cc 50%, #1c2496 100%);
+    background:
+        repeating-linear-gradient(
+            45deg,
+            rgba(255, 255, 255, 0.05) 0px,
+            rgba(255, 255, 255, 0.05) 2px,
+            transparent 2px,
+            transparent 8px
+        ),
+        #00274C;
     border-radius: 5px;
-    border: 1.5px solid #333;
+    border: 1.5px solid #001a38;
     box-shadow: 1px 2px 5px rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.card-back-sm::after {
+    content: 'KB';
+    color: #FFCB05;
+    font-size: 0.6rem;
+    font-weight: bold;
+    font-family: 'Georgia', serif;
+    letter-spacing: 0.06em;
 }
 
 .opponent-quarters {
     font-size: 0.85rem;
     color: #bbb;
     margin-top: 0.3rem;
+    display: flex;
+    gap: 2px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+/* Quarter chip icons */
+.chip {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #ffe066, #b8860b);
+    border: 2px solid #8a6500;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    vertical-align: middle;
+    margin: 0 1px;
+    flex-shrink: 0;
+}
+
+.chip-sm {
+    width: 15px;
+    height: 15px;
+    border-width: 1.5px;
 }
 
 /* === Piles Zone === */
@@ -233,13 +283,40 @@ button:disabled {
     color: #111;
 }
 
+/* Structured card face layout (used for pile card and card buttons) */
+.pile-card.card-face {
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: stretch;
+    padding: 8px;
+    font-size: 1rem;
+}
+
 .card-face.red-suit {
     color: #cc0000;
 }
 
+/* Michigan Blue card back with KB in Maize */
 .card-back {
-    background: linear-gradient(145deg, #1c2496 0%, #3344cc 45%, #1c2496 100%);
-    color: rgba(255, 255, 255, 0.1);
+    background:
+        repeating-linear-gradient(
+            45deg,
+            rgba(255, 255, 255, 0.05) 0px,
+            rgba(255, 255, 255, 0.05) 2px,
+            transparent 2px,
+            transparent 8px
+        ),
+        #00274C;
+}
+
+.card-back::after {
+    content: 'KB';
+    color: #FFCB05;
+    font-size: 1.25rem;
+    font-weight: bold;
+    font-family: 'Georgia', serif;
+    text-shadow: 0 1px 5px rgba(0, 0, 0, 0.7);
+    letter-spacing: 0.1em;
 }
 
 /* === Player 1 Zone === */
@@ -278,11 +355,11 @@ button:disabled {
     flex-wrap: wrap;
 }
 
-/* Player 1 card buttons — large and prominent */
+/* Player 1 card buttons — large and prominent, real card face layout */
 .card-btn {
     width: 100px;
     height: 140px;
-    font-size: 1.75rem;
+    font-size: 1rem;
     font-weight: bold;
     border-radius: 9px;
     border: 2px solid #aaa;
@@ -291,7 +368,36 @@ button:disabled {
     cursor: pointer;
     box-shadow: 3px 6px 12px rgba(0, 0, 0, 0.45);
     transition: transform 0.12s, box-shadow 0.12s, border-color 0.1s;
-    padding: 0;
+    padding: 6px;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: space-between;
+}
+
+/* Corner rank+suit labels */
+.card-corner {
+    font-size: 0.88rem;
+    font-weight: bold;
+    line-height: 1.15;
+    color: inherit;
+}
+
+.card-corner.top-left {
+    text-align: left;
+}
+
+.card-corner.bottom-right {
+    text-align: left;
+    transform: rotate(180deg);
+}
+
+/* Large suit pip in the center */
+.card-center-pip {
+    font-size: 2.6rem;
+    line-height: 1;
+    text-align: center;
+    flex: 1;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -335,6 +441,103 @@ button:disabled {
     padding-left: 1.5rem;
     line-height: 1.9;
     font-size: 1rem;
+}
+
+/* === Round Results Card Display === */
+.results-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+    margin: 0.75rem 0;
+}
+
+.results-player {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    flex-wrap: wrap;
+}
+
+.results-player.results-loser .results-player-name {
+    color: #ff9999;
+}
+
+.results-player-info {
+    min-width: 110px;
+}
+
+.results-player-name {
+    font-weight: bold;
+    font-size: 1rem;
+}
+
+.results-score {
+    font-size: 0.88rem;
+    color: #ccc;
+    margin-top: 2px;
+}
+
+.results-hand {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.results-badges {
+    display: flex;
+    gap: 4px;
+    margin-top: 4px;
+    flex-wrap: wrap;
+}
+
+.badge {
+    font-size: 0.7rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: bold;
+    background: rgba(255, 255, 255, 0.14);
+    color: #ddd;
+}
+
+.badge-lost {
+    background: rgba(200, 50, 50, 0.4);
+    color: #ffaaaa;
+}
+
+.badge-31 {
+    background: rgba(50, 200, 50, 0.35);
+    color: #aaffaa;
+}
+
+/* Small card face used in round results */
+.card-face-sm {
+    width: 58px;
+    height: 82px;
+    border-radius: 6px;
+    border: 1.5px solid #bbb;
+    background: #fff;
+    color: #111;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: space-between;
+    padding: 4px;
+    font-weight: bold;
+    box-shadow: 1px 3px 7px rgba(0, 0, 0, 0.5);
+    user-select: none;
+}
+
+.card-face-sm.red-suit {
+    color: #cc0000;
+}
+
+.card-face-sm .card-corner {
+    font-size: 0.6rem;
+    line-height: 1.1;
+}
+
+.card-face-sm .card-center-pip {
+    font-size: 1.5rem;
 }
 
 /* === Turn Log === */

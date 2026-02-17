@@ -22,6 +22,7 @@ const discardTopEl = document.getElementById('discard-top');
 const stockCountEl = document.getElementById('stock-count');
 const stockDisplayEl = document.getElementById('stock-display');
 const otherPlayersEl = document.getElementById('other-players');
+const playerZoneEl = document.getElementById('player-zone');
 const roundSummaryEl = document.getElementById('round-summary');
 const roundResultsEl = document.getElementById('round-results');
 const turnLogEl = document.getElementById('turn-log');
@@ -47,6 +48,12 @@ function isRedSuit(suit) {
     return suit === '♥' || suit === '♦';
 }
 
+function cardFaceHtml(card) {
+    return `<span class="card-corner top-left">${card.rank}<br>${card.suit}</span>` +
+           `<span class="card-center-pip">${card.suit}</span>` +
+           `<span class="card-corner bottom-right">${card.rank}<br>${card.suit}</span>`;
+}
+
 function log(msg) {
     turnLog.unshift(msg);
     if (turnLog.length > 12) turnLog.length = 12;
@@ -63,6 +70,7 @@ function sleep(ms) {
 
 function render() {
     if (!gameState) {
+        playerZoneEl.classList.remove('active-turn');
         currentPlayerEl.textContent = '—';
         phaseEl.textContent = '—';
         playerHandEl.innerHTML = '';
@@ -99,12 +107,15 @@ function render() {
     }
     phaseEl.textContent = phaseText;
 
-    // Player 1's quarters
+    // Player 1's quarters as chip icons + text
     const p1 = gameState.players[0];
     if (p1.out) {
         playerQuartersEl.textContent = '[OUT]';
     } else {
-        playerQuartersEl.textContent = `[${p1.quarters} quarter${p1.quarters !== 1 ? 's' : ''}]`;
+        const q = p1.quarters;
+        let chipsHtml = '';
+        for (let c = 0; c < q; c++) chipsHtml += '<span class="chip"></span>';
+        playerQuartersEl.innerHTML = chipsHtml + ` <span style="color:#ddd;font-size:0.95rem;">${q} quarter${q !== 1 ? 's' : ''}</span>`;
     }
 
     // Player 1's hand as clickable card buttons
@@ -112,7 +123,7 @@ function render() {
     playerHandEl.innerHTML = '';
     hand.forEach((card, index) => {
         const btn = document.createElement('button');
-        btn.textContent = cardLabel(card);
+        btn.innerHTML = cardFaceHtml(card);
         btn.className = 'card-btn' + (isRedSuit(card.suit) ? ' red-suit' : '');
 
         // Only clickable when it's Player 1's turn and phase is needDiscard and round not over
@@ -134,10 +145,15 @@ function render() {
     // Player 1's score
     playerScoreEl.textContent = scoreHand(hand);
 
-    // Discard pile top
+    // Discard pile top — real card face
     const topDiscard = getTopDiscard(gameState);
-    discardTopEl.textContent = topDiscard ? cardLabel(topDiscard) : '—';
-    discardTopEl.className = 'card-face pile-card' + (topDiscard && isRedSuit(topDiscard.suit) ? ' red-suit' : '');
+    if (topDiscard) {
+        discardTopEl.className = 'card-face pile-card' + (isRedSuit(topDiscard.suit) ? ' red-suit' : '');
+        discardTopEl.innerHTML = cardFaceHtml(topDiscard);
+    } else {
+        discardTopEl.className = 'card-face pile-card';
+        discardTopEl.textContent = '—';
+    }
 
     // Stock pile
     stockCountEl.textContent = gameState.stock.length;
@@ -148,7 +164,9 @@ function render() {
     for (let i = 1; i < gameState.players.length; i++) {
         const player = gameState.players[i];
         const area = document.createElement('div');
-        area.className = 'opponent-area' + (player.out ? ' out' : '');
+        area.className = 'opponent-area' +
+            (player.out ? ' out' : '') +
+            (i === gameState.currentPlayerIndex && !gameState.roundOver ? ' active-turn' : '');
 
         const name = document.createElement('div');
         name.className = 'opponent-name';
@@ -167,7 +185,9 @@ function render() {
 
             const qtrs = document.createElement('div');
             qtrs.className = 'opponent-quarters';
-            qtrs.textContent = `${player.quarters} quarter${player.quarters !== 1 ? 's' : ''}`;
+            let chipsHtml = '';
+            for (let c = 0; c < player.quarters; c++) chipsHtml += '<span class="chip chip-sm"></span>';
+            qtrs.innerHTML = chipsHtml;
             area.appendChild(qtrs);
         } else {
             const out = document.createElement('div');
@@ -178,6 +198,9 @@ function render() {
 
         otherPlayersEl.appendChild(area);
     }
+
+    // Turn highlight — player zone
+    playerZoneEl.classList.toggle('active-turn', gameState.currentPlayerIndex === 0 && !gameState.roundOver);
 
     // Enable/disable buttons based on state
     const isPlayer1Turn = gameState.currentPlayerIndex === 0;
@@ -210,28 +233,42 @@ function render() {
             html += `<p><strong>The Hammer! Player ${gameState.startingPlayerIndex + 1} slammed down their hand.</strong></p>`;
         }
 
-        html += '<p><strong>Scores:</strong></p><ul>';
+        html += '<div class="results-list">';
         for (let i = 0; i < gameState.players.length; i++) {
             const player = gameState.players[i];
             if (player.hand.length === 0) {
-                html += `<li>Player ${i + 1}: OUT</li>`;
+                html += `<div class="results-player"><div class="results-player-info"><div class="results-player-name">Player ${i + 1}</div><div class="results-score">OUT</div></div></div>`;
                 continue;
             }
-            const handStr = player.hand.map(cardLabel).join(' ');
             const isLoser = losers.includes(i);
             const isKnocker = i === gameState.knockerIndex;
             const isInstant31Winner = gameState.roundResultType === 'instant31' && i === gameState.instant31WinnerIndex;
-            let label = `Player ${i + 1}: ${scores[i]} points (${handStr})`;
-            if (isKnocker) label += ' [Knocker]';
-            if (isInstant31Winner) label += ' [31!]';
-            if (isLoser) label = `<strong>${label} — LOST</strong>`;
-            if (isLoser && player.quarters === 0) label += ' [ELIMINATED]';
-            html += `<li>${label}</li>`;
+
+            const cardsHtml = player.hand.map(card => {
+                const redClass = isRedSuit(card.suit) ? ' red-suit' : '';
+                return `<div class="card-face-sm${redClass}">${cardFaceHtml(card)}</div>`;
+            }).join('');
+
+            let badgesHtml = '';
+            if (isKnocker) badgesHtml += '<span class="badge">Knocker</span>';
+            if (isInstant31Winner) badgesHtml += '<span class="badge badge-31">31!</span>';
+            if (isLoser) badgesHtml += '<span class="badge badge-lost">LOST −¼</span>';
+            if (isLoser && player.quarters === 0) badgesHtml += '<span class="badge badge-lost">ELIMINATED</span>';
+
+            html += `
+                <div class="results-player${isLoser ? ' results-loser' : ''}">
+                    <div class="results-player-info">
+                        <div class="results-player-name">Player ${i + 1}</div>
+                        <div class="results-score">${scores[i]} pts</div>
+                        <div class="results-badges">${badgesHtml}</div>
+                    </div>
+                    <div class="results-hand">${cardsHtml}</div>
+                </div>`;
         }
-        html += '</ul>';
+        html += '</div>';
 
         const loserNames = losers.map(i => `Player ${i + 1}`).join(', ');
-        html += `<p><strong>Loser(s):</strong> ${loserNames} (-1 quarter each)</p>`;
+        html += `<p style="margin-top:0.75rem;"><strong>Loser(s):</strong> ${loserNames} (-1 quarter each)</p>`;
 
         roundResultsEl.innerHTML = html;
     } else {
