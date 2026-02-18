@@ -17,6 +17,7 @@ const currentPlayerEl = document.getElementById('current-player');
 const playerHandEl = document.getElementById('player-hand');
 const playerScoreEl = document.getElementById('player-score');
 const playerQuartersEl = document.getElementById('player-quarters');
+const playerInfoEl = document.getElementById('player-info');
 const discardTopEl = document.getElementById('discard-top');
 const stockCountEl = document.getElementById('stock-count');
 const stockDisplayEl = document.getElementById('stock-display');
@@ -25,6 +26,7 @@ const playerZoneEl = document.getElementById('player-zone');
 const roundSummaryEl = document.getElementById('round-summary');
 const roundResultsEl = document.getElementById('round-results');
 const ghostCardEl = document.getElementById('ghost-card');
+const knockRingEl = document.getElementById('knock-ring');
 const actionLabelEl = document.getElementById('action-label');
 const lastActionStripEl = document.getElementById('last-action-strip');
 
@@ -50,12 +52,13 @@ function initMatchStats() {
     return { roundsPlayed: 0, hammersUsed: 0, instant31Count: 0, lastRoundLosers: [] };
 }
 let matchStats = initMatchStats();
-const DEBUG_AI = false;
 
-// AI thresholds
+// Set DEBUG = true to log AI temperament and decision math to the console.
+const DEBUG = false;
+
+// AI base thresholds (adjusted by temperament at runtime)
 const GAMBLE_SCORE_THRESHOLD = 25;   // "strong" hand — might skip small discard cards
 const GAMBLE_CARD_MAX_VALUE = 3;     // only gamble past cards worth ≤ this
-const KNOCK_SCORE_THRESHOLD = 27;    // knock when hand is this good or better
 
 function isRedSuit(suit) {
     return suit === '♥' || suit === '♦';
@@ -176,6 +179,63 @@ function showAction(playerIndex, text) {
     }, 800);
 }
 
+/**
+ * Decide if an AI should use The Hammer before anyone draws.
+ * Base threshold drops as more players are at the table (higher chance of someone losing).
+ * Aggression lowers the threshold; conservatism raises it.
+ * Small bounded noise prevents identical behaviour every game.
+ */
+function decideHammer(score, playersRemaining, aggression) {
+    const baseThreshold = 28 - playersRemaining * 1.6;
+    const adjustedThreshold = baseThreshold - aggression * 2.5;
+    const noise = (Math.random() - 0.5) * 4; // ±2 pts
+    const result = score >= adjustedThreshold + noise;
+    if (DEBUG) {
+        console.log(`[HAMMER] score=${score} players=${playersRemaining} agg=${aggression} ` +
+            `thresh=${adjustedThreshold.toFixed(1)} noise=${noise.toFixed(1)} → ${result ? 'YES' : 'no'}`);
+    }
+    return result;
+}
+
+/**
+ * Decide if an AI should knock.
+ * Base threshold scales with player count; urgency reduces it as turns pass;
+ * aggression shifts it down (knock sooner); conservatism shifts it up.
+ */
+function decideKnock(score, playersRemaining, roundTurnCount, aggression) {
+    const baseThreshold = 23 + playersRemaining * 1.0;
+    const urgencyReduction = Math.min(roundTurnCount * 0.4, 4); // caps at −4
+    const aggressionAdjust = aggression * 1.5;
+    const adjustedThreshold = baseThreshold - urgencyReduction - aggressionAdjust;
+    const noise = (Math.random() - 0.5) * 5; // ±2.5 pts
+    const result = score >= adjustedThreshold + noise;
+    if (DEBUG) {
+        console.log(`[KNOCK] score=${score} players=${playersRemaining} turns=${roundTurnCount} ` +
+            `agg=${aggression} thresh=${adjustedThreshold.toFixed(1)} noise=${noise.toFixed(1)} → ${result ? 'YES' : 'no'}`);
+    }
+    return result;
+}
+
+/**
+ * Show a brief amber ring pulse around the given player's area (fires once).
+ * Does NOT need to be awaited — the ring animation runs in the background.
+ */
+async function showKnockPulse(playerIndex) {
+    const playerEl = getPlayerAreaEl(playerIndex);
+    if (!playerEl || !knockRingEl) return;
+    const rect = playerEl.getBoundingClientRect();
+    knockRingEl.style.top    = `${rect.top    - 5}px`;
+    knockRingEl.style.left   = `${rect.left   - 5}px`;
+    knockRingEl.style.width  = `${rect.width  + 10}px`;
+    knockRingEl.style.height = `${rect.height + 10}px`;
+    // Force-restart animation by toggling the class
+    knockRingEl.classList.remove('pulsing');
+    knockRingEl.offsetHeight; // reflow
+    knockRingEl.classList.add('pulsing');
+    await sleep(1150); // 2 × 520ms + margin
+    knockRingEl.classList.remove('pulsing');
+}
+
 function showMatchOverOverlay() {
     const isTie = gameState.winnerIndex === null;
 
@@ -231,6 +291,9 @@ function render() {
     if (!gameState) {
         playerZoneEl.classList.remove('active-turn');
         playerZoneEl.classList.remove('round-loser');
+        playerZoneEl.classList.remove('has-knocked');
+        const staleKnockBadge = playerInfoEl.querySelector('.p1-knock-badge');
+        if (staleKnockBadge) staleKnockBadge.remove();
         currentPlayerEl.textContent = '—';
         playerHandEl.innerHTML = '';
         playerScoreEl.textContent = '—';
@@ -335,12 +398,22 @@ function render() {
     for (let i = 1; i < gameState.players.length; i++) {
         const player = gameState.players[i];
         const isLoser = roundEndData && roundEndData.losers.includes(i);
+        const isKnocker = gameState.knocked && gameState.knockerIndex === i;
         const area = document.createElement('div');
         area.className = 'opponent-area' +
             (player.out ? ' out' : '') +
             (i === gameState.currentPlayerIndex && !gameState.roundOver ? ' active-turn' : '') +
-            (isLoser ? ' round-loser' : '');
+            (isLoser ? ' round-loser' : '') +
+            (isKnocker ? ' has-knocked' : '');
         area.dataset.playerIndex = i;
+
+        // Knock badge (positioned inside the area, top-left corner)
+        if (isKnocker) {
+            const knockBadge = document.createElement('div');
+            knockBadge.className = 'knock-badge';
+            knockBadge.textContent = '✊';
+            area.appendChild(knockBadge);
+        }
 
         const name = document.createElement('div');
         name.className = 'opponent-name';
@@ -397,6 +470,19 @@ function render() {
     // Round loser indicator — player 1
     const p1IsLoser = roundEndData && roundEndData.losers.includes(0);
     playerZoneEl.classList.toggle('round-loser', !!p1IsLoser);
+
+    // Knock indicator — player 1
+    const p1IsKnocker = gameState.knocked && gameState.knockerIndex === 0;
+    playerZoneEl.classList.toggle('has-knocked', p1IsKnocker);
+    const existingP1KnockBadge = playerInfoEl.querySelector('.p1-knock-badge');
+    if (p1IsKnocker && !existingP1KnockBadge) {
+        const badge = document.createElement('span');
+        badge.className = 'knock-badge p1-knock-badge';
+        badge.textContent = '✊ KNOCK';
+        playerInfoEl.appendChild(badge);
+    } else if (!p1IsKnocker && existingP1KnockBadge) {
+        existingP1KnockBadge.remove();
+    }
 
     // Enable/disable buttons based on state
     const isPlayer1Turn = gameState.currentPlayerIndex === 0;
@@ -489,13 +575,28 @@ async function runOtherPlayersTurns() {
     while ((player1Out || gameState.currentPlayerIndex !== 0) && !gameState.roundOver) {
         const pi = gameState.currentPlayerIndex;
         const hand = gameState.players[pi].hand;
+        const aggression = gameState.ai[pi].aggression;
+        const playersRemaining = gameState.players.filter(p => !p.out).length;
 
         await sleep(300 + AI_DELAY_BONUS_MS);
 
+        // --- Hammer decision (only eligible if this AI is the starting player) ---
+        if (gameState.hammerAvailable && pi === gameState.startingPlayerIndex) {
+            const score = scoreHand(hand);
+            if (decideHammer(score, playersRemaining, aggression)) {
+                hammer(gameState);
+                setLastAction(`Player ${pi + 1} hammered`);
+                showAction(pi, 'Hammered!');
+                render();
+                break;
+            }
+        }
+
         // --- Knock decision (before drawing) ---
         const preDrawScore = scoreHand(hand);
-        if (!gameState.knocked && preDrawScore >= KNOCK_SCORE_THRESHOLD) {
+        if (!gameState.knocked && decideKnock(preDrawScore, playersRemaining, gameState.roundTurnCount, aggression)) {
             knock(gameState);
+            showKnockPulse(pi); // fire-and-forget; amber ring flashes in background
             setLastAction(`Player ${pi + 1} knocked`);
             showAction(pi, 'Knocked');
             render();
@@ -506,7 +607,7 @@ async function runOtherPlayersTurns() {
 
         // --- Draw decision ---
         const targetSuit = pickTargetSuit(hand, cardValue);
-        if (DEBUG_AI) console.log(`Player ${pi + 1} targets ${targetSuit}`);
+        if (DEBUG) console.log(`Player ${pi + 1} targets ${targetSuit}`);
 
         const topCard = getTopDiscard(gameState);
         let drewDiscard = false;
@@ -519,12 +620,13 @@ async function runOtherPlayersTurns() {
             const discardHelps = currentTargetTotal + cardValue(topCard) > currentTargetTotal;
 
             if (discardHelps) {
-                // Gamble: skip small helpful cards when hand is already strong
-                const shouldGamble = preDrawScore >= GAMBLE_SCORE_THRESHOLD
+                // Gamble: temperament shifts the threshold — aggressive AIs gamble more often
+                const adjustedGambleThreshold = GAMBLE_SCORE_THRESHOLD - aggression * 2;
+                const shouldGamble = preDrawScore >= adjustedGambleThreshold
                     && cardValue(topCard) <= GAMBLE_CARD_MAX_VALUE;
 
                 if (shouldGamble) {
-                    if (DEBUG_AI) console.log(`Player ${pi + 1} gambles — skips ${cardLabel(topCard)}`);
+                    if (DEBUG) console.log(`Player ${pi + 1} gambles — skips ${cardLabel(topCard)}`);
                 } else {
                     if (drawFromDiscard(gameState)) {
                         drewDiscard = true;
@@ -580,6 +682,16 @@ async function runOtherPlayersTurns() {
     render();
 }
 
+function logAITemperaments() {
+    if (!DEBUG) return;
+    console.log('[DEBUG] AI temperaments for this match:');
+    const labels = ['very conservative', 'conservative', 'average', 'aggressive', 'very aggressive'];
+    for (let i = 1; i < gameState.numPlayers; i++) {
+        const agg = gameState.ai[i].aggression;
+        console.log(`  Player ${i + 1}: aggression=${agg} (${labels[agg + 2]})`);
+    }
+}
+
 // Single start/restart handler — always starts a fresh game
 startGameBtn.addEventListener('click', () => {
     const numPlayers = parseInt(playerCountSelect.value, 10);
@@ -589,7 +701,7 @@ startGameBtn.addEventListener('click', () => {
     hideMatchOverOverlay();
     hideInstant31Banner();
     setLastAction('');
-    console.log('Game started:', gameState);
+    logAITemperaments();
     render();
 });
 
@@ -641,6 +753,7 @@ discardTopEl.addEventListener('click', () => {
 knockBtn.addEventListener('click', async () => {
     if (knock(gameState)) {
         setLastAction('Player 1 knocked');
+        showKnockPulse(0); // fire-and-forget amber ring pulse
         render();
         await runOtherPlayersTurns();
     }
@@ -684,6 +797,7 @@ playAgainBtn.addEventListener('click', async () => {
     hideMatchOverOverlay();
     hideInstant31Banner();
     setLastAction('');
+    logAITemperaments();
     render();
     await runOtherPlayersTurns();
 });

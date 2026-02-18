@@ -781,6 +781,62 @@ button:disabled {
     white-space: nowrap;
 }
 
+/* === Knock Indicator === */
+
+/* Persistent amber ring around the knocking player's area */
+.has-knocked {
+    box-shadow: 0 0 0 2px #e07820, 0 0 14px rgba(220, 110, 0, 0.3);
+    border-radius: 10px;
+}
+
+/* Small badge inside opponent areas (absolute, top-left) */
+.knock-badge {
+    position: absolute;
+    top: -13px;
+    left: 5px;
+    background: #b06010;
+    color: #fff;
+    font-size: 0.68rem;
+    font-weight: bold;
+    padding: 2px 6px;
+    border-radius: 4px;
+    z-index: 10;
+    white-space: nowrap;
+    letter-spacing: 0.05em;
+}
+
+/* Inline variant appended to player 1's #player-info row */
+.knock-badge.p1-knock-badge {
+    position: static;
+    display: inline-block;
+    margin-left: 0.6rem;
+    vertical-align: middle;
+    font-size: 0.72rem;
+}
+
+/* Knock ring pulse overlay (fires once when a player knocks) */
+#knock-ring {
+    position: fixed;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+    z-index: 998;
+    border: 3px solid transparent;
+    border-radius: 14px;
+    opacity: 0;
+}
+
+#knock-ring.pulsing {
+    animation: knock-ring-pulse 0.52s ease-in-out 2;
+}
+
+@keyframes knock-ring-pulse {
+    0%   { border-color: rgba(240, 150, 20, 0);   opacity: 0;   box-shadow: 0 0 0 0   rgba(240, 150, 20, 0); }
+    30%  { border-color: rgba(240, 150, 20, 0.9); opacity: 1;   box-shadow: 0 0 0 8px rgba(240, 150, 20, 0.35); }
+    70%  { border-color: rgba(240, 150, 20, 0.6); opacity: 0.8; box-shadow: 0 0 0 4px rgba(240, 150, 20, 0.2); }
+    100% { border-color: rgba(240, 150, 20, 0);   opacity: 0;   box-shadow: 0 0 0 0   rgba(240, 150, 20, 0); }
+}
+
 /* === Instant 31 Celebration Banner === */
 .instant31-banner {
     position: fixed;

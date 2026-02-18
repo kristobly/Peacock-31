@@ -2,6 +2,19 @@ import { createDeck, shuffle, deal } from './cards.js';
 import { scoreHand, cardValue, isInstant31 } from './rules.js';
 
 /**
+ * Generate a random aggression value for an AI player.
+ * Distribution: -2 (5%), -1 (20%), 0 (50%), +1 (20%), +2 (5%)
+ */
+function randomAggression() {
+    const r = Math.random();
+    if (r < 0.05) return -2;
+    if (r < 0.25) return -1;
+    if (r < 0.75) return 0;
+    if (r < 0.95) return 1;
+    return 2;
+}
+
+/**
  * Start a new game with the given number of players.
  * Returns the initial game state.
  */
@@ -16,9 +29,16 @@ export function startGame(numPlayers) {
     // Turn top card face-up to start the discard pile
     const discard = deal(deck, 1);
 
+    // AI temperament: index 0 is human (aggression unused); 1..N-1 are AI.
+    // Stable for the whole match — not reset between rounds.
+    const ai = players.map((_, i) => ({
+        aggression: i === 0 ? 0 : randomAggression()
+    }));
+
     return {
         numPlayers,
         players,
+        ai,
         startingPlayerIndex: 0,
         currentPlayerIndex: 0,
         phase: 'needDraw',
@@ -33,7 +53,9 @@ export function startGame(numPlayers) {
         instant31WinnerIndex: null,
         hammerAvailable: true,
         gameOver: false,
-        winnerIndex: null
+        winnerIndex: null,
+        // Per-round turn counter (increments on each completed discard)
+        roundTurnCount: 0
     };
 }
 
@@ -192,6 +214,7 @@ export function discardCard(state, handIndex) {
 
     const card = hand.splice(handIndex, 1)[0];
     state.discard.push(card);
+    state.roundTurnCount++;
     state.phase = 'needDraw';
 
     // Handle knock final turns
@@ -325,7 +348,7 @@ export function startNextRound(state) {
     state.discard = deal(deck, 1);
     state.stock = deck;
 
-    // Reset round fields
+    // Reset round fields (ai[] is NOT reset — stable for whole match)
     state.phase = 'needDraw';
     state.knocked = false;
     state.knockerIndex = null;
@@ -334,6 +357,7 @@ export function startNextRound(state) {
     state.roundResultType = 'normal';
     state.instant31WinnerIndex = null;
     state.hammerAvailable = true;
+    state.roundTurnCount = 0;
 
     // Rotate starting player to the next active player
     state.startingPlayerIndex = nextActivePlayer(state, state.startingPlayerIndex);
