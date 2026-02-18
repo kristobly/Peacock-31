@@ -34,11 +34,25 @@ const loadExamplesBtn = document.getElementById('load-examples-btn');
 const exampleHandEl = document.getElementById('example-hand');
 const exampleScoreEl = document.getElementById('example-score');
 
+// DOM elements - match over overlay
+const matchOverlayEl = document.getElementById('match-over-overlay');
+const matchWinnerTextEl = document.getElementById('match-winner-text');
+const matchPlayerTableEl = document.getElementById('match-player-table');
+const matchRecapEl = document.getElementById('match-recap');
+const playAgainBtn = document.getElementById('play-again-btn');
+const changeSettingsBtn = document.getElementById('change-settings-btn');
+
 // Game state
 let gameState = null;
 let isAutoPlaying = false;
 const turnLog = [];
 const AI_DELAY_BONUS_MS = 1000;
+
+// Match-level stats (reset on each new match)
+function initMatchStats() {
+    return { roundsPlayed: 0, hammersUsed: 0, instant31Count: 0, lastRoundLosers: [] };
+}
+let matchStats = initMatchStats();
 const DEBUG_AI = false;
 
 // AI thresholds
@@ -148,6 +162,57 @@ function showAction(playerIndex, text) {
         actionLabelEl.classList.remove('visible');
         actionLabelTimeout = null;
     }, 800);
+}
+
+function showMatchOverOverlay() {
+    const isTie = gameState.winnerIndex === null;
+
+    // Winner / tie headline
+    matchWinnerTextEl.textContent = isTie
+        ? `It's a tie — everyone is out!`
+        : `Winner: Player ${gameState.winnerIndex + 1}`;
+
+    // Player table
+    let tableHtml = '<thead><tr><th>Player</th><th>Quarters</th><th>Status</th></tr></thead><tbody>';
+    for (let i = 0; i < gameState.players.length; i++) {
+        const p = gameState.players[i];
+        const isWinner = !isTie && i === gameState.winnerIndex;
+        const rowClass = isWinner ? 'match-winner-row' : 'match-out-row';
+        const status = isWinner ? '🏆 WINNER' : 'OUT';
+        let quartersHtml = '';
+        if (isWinner) {
+            for (let c = 0; c < p.quarters; c++) quartersHtml += '<span class="chip chip-sm"></span>';
+            quartersHtml += ` <span style="font-size:0.85rem;">${p.quarters}</span>`;
+        } else {
+            quartersHtml = '0';
+        }
+        tableHtml += `<tr class="${rowClass}"><td>Player ${i + 1}</td><td>${quartersHtml}</td><td>${status}</td></tr>`;
+    }
+    tableHtml += '</tbody>';
+    matchPlayerTableEl.innerHTML = tableHtml;
+
+    // Recap bullets
+    const lastLoserText = matchStats.lastRoundLosers.length > 0
+        ? matchStats.lastRoundLosers.join(', ') + ` lost a quarter in the final round`
+        : 'No losers in the final round';
+
+    let recapHtml = '<ul>';
+    recapHtml += `<li>Rounds played: <strong>${matchStats.roundsPlayed}</strong></li>`;
+    recapHtml += `<li>${lastLoserText}</li>`;
+    if (matchStats.hammersUsed > 0) {
+        recapHtml += `<li>The Hammer used: <strong>${matchStats.hammersUsed}</strong> time${matchStats.hammersUsed !== 1 ? 's' : ''}</li>`;
+    }
+    if (matchStats.instant31Count > 0) {
+        recapHtml += `<li>Instant 31: <strong>${matchStats.instant31Count}</strong> time${matchStats.instant31Count !== 1 ? 's' : ''}</li>`;
+    }
+    recapHtml += '</ul>';
+    matchRecapEl.innerHTML = recapHtml;
+
+    matchOverlayEl.classList.remove('hidden');
+}
+
+function hideMatchOverOverlay() {
+    matchOverlayEl.classList.add('hidden');
 }
 
 function render() {
@@ -320,7 +385,10 @@ function render() {
 
         // Game over winner message
         if (isGameOver) {
-            html += `<p><strong style="font-size: 1.5em;">Winner: Player ${gameState.winnerIndex + 1}!</strong></p>`;
+            const endMsg = gameState.winnerIndex !== null
+                ? `Winner: Player ${gameState.winnerIndex + 1}!`
+                : `It's a tie — everyone is out!`;
+            html += `<p><strong style="font-size: 1.5em;">${endMsg}</strong></p>`;
         }
 
         // Show round result type message
@@ -479,6 +547,9 @@ async function runOtherPlayersTurns() {
 startGameBtn.addEventListener('click', () => {
     const numPlayers = parseInt(playerCountSelect.value, 10);
     gameState = startGame(numPlayers);
+    matchStats = initMatchStats();
+    isAutoPlaying = false;
+    hideMatchOverOverlay();
     turnLog.length = 0;
     log(`Round starts with Player ${gameState.startingPlayerIndex + 1}`);
     console.log('Game started:', gameState);
@@ -540,10 +611,16 @@ hammerBtn.addEventListener('click', () => {
 });
 
 nextRoundBtn.addEventListener('click', async () => {
-    // Apply round results before starting next round
+    // Score and track stats before applying results
     const { losers } = scoreRound(gameState);
+    matchStats.roundsPlayed++;
+    matchStats.lastRoundLosers = losers.map(i => `Player ${i + 1}`);
+    if (gameState.roundResultType === 'hammer') matchStats.hammersUsed++;
+    if (gameState.roundResultType === 'instant31') matchStats.instant31Count++;
+
     applyRoundResults(gameState, losers);
     if (gameState.gameOver) {
+        showMatchOverOverlay();
         render();
         return;
     }
@@ -553,6 +630,29 @@ nextRoundBtn.addEventListener('click', async () => {
     console.log('Starting next round');
     render();
     await runOtherPlayersTurns();
+});
+
+// Play Again: fresh match with the same player count
+playAgainBtn.addEventListener('click', async () => {
+    const numPlayers = parseInt(playerCountSelect.value, 10);
+    gameState = startGame(numPlayers);
+    matchStats = initMatchStats();
+    isAutoPlaying = false;
+    hideMatchOverOverlay();
+    turnLog.length = 0;
+    log(`Round starts with Player ${gameState.startingPlayerIndex + 1}`);
+    render();
+    await runOtherPlayersTurns();
+});
+
+// Change Settings: return to pre-game state without starting
+changeSettingsBtn.addEventListener('click', () => {
+    gameState = null;
+    matchStats = initMatchStats();
+    isAutoPlaying = false;
+    hideMatchOverOverlay();
+    turnLog.length = 0;
+    render();
 });
 
 // Example hands for verification (separate section)

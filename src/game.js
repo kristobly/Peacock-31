@@ -254,9 +254,9 @@ export function applyRoundResults(state, losers) {
         .map((p, i) => ({ index: i, active: !p.out }))
         .filter(p => p.active);
 
-    if (activePlayers.length === 1) {
+    if (activePlayers.length <= 1) {
         state.gameOver = true;
-        state.winnerIndex = activePlayers[0].index;
+        state.winnerIndex = activePlayers.length === 1 ? activePlayers[0].index : null;
         state.roundOver = true;
     }
 }

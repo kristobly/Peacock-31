@@ -661,3 +661,124 @@ button:disabled {
 .action-label.visible {
     opacity: 1;
 }
+
+/* === Match Over Overlay === */
+.match-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.78);
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.match-overlay.hidden {
+    display: none;
+}
+
+.match-overlay-panel {
+    background: #1a3a1a;
+    border: 2px solid #5a9a5a;
+    border-radius: 14px;
+    padding: 2rem 2.25rem;
+    max-width: 520px;
+    width: 92%;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.85);
+    color: #f0f0f0;
+    text-align: center;
+}
+
+.match-over-title {
+    font-size: 2.2rem;
+    color: #f0d060;
+    margin: 0 0 0.5rem 0;
+    text-shadow: 1px 1px 6px rgba(0, 0, 0, 0.6);
+}
+
+.match-winner-text {
+    font-size: 1.35rem;
+    font-weight: bold;
+    color: #7fff7f;
+    margin: 0 0 1.25rem 0;
+}
+
+.match-player-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 1.25rem;
+    font-size: 0.95rem;
+    text-align: left;
+}
+
+.match-player-table th {
+    color: #aaa;
+    font-weight: normal;
+    padding: 0.3rem 0.5rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.match-player-table td {
+    padding: 0.45rem 0.5rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+    vertical-align: middle;
+}
+
+.match-player-table tr.match-winner-row td {
+    color: #7fff7f;
+    font-weight: bold;
+}
+
+.match-player-table tr.match-out-row td {
+    color: #777;
+}
+
+.match-recap {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 8px;
+    padding: 0.75rem 1rem 0.75rem 1.25rem;
+    margin-bottom: 1.5rem;
+    text-align: left;
+    font-size: 0.92rem;
+    color: #ccc;
+    line-height: 1.75;
+}
+
+.match-recap ul {
+    margin: 0;
+    padding-left: 1.1rem;
+}
+
+.match-recap li {
+    margin: 0;
+}
+
+.match-overlay-buttons {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+}
+
+#play-again-btn {
+    background: #f0d060;
+    border-color: #c8a800;
+    color: #333;
+    font-size: 1.05rem;
+    padding: 0.6rem 1.5rem;
+}
+
+#play-again-btn:hover:not(:disabled) {
+    background: #ffe04a;
+}
+
+#change-settings-btn {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: #888;
+    color: #ddd;
+    font-size: 1.05rem;
+    padding: 0.6rem 1.5rem;
+}
+
+#change-settings-btn:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.2);
+}
