@@ -28,6 +28,7 @@ const roundResultsEl = document.getElementById('round-results');
 const turnLogEl = document.getElementById('turn-log');
 const ghostCardEl = document.getElementById('ghost-card');
 const actionLabelEl = document.getElementById('action-label');
+const lastActionStripEl = document.getElementById('last-action-strip');
 
 // DOM elements - examples section
 const loadExamplesBtn = document.getElementById('load-examples-btn');
@@ -78,6 +79,10 @@ function log(msg) {
 
 function renderLog() {
     turnLogEl.innerHTML = turnLog.map(m => `<li>${m}</li>`).join('');
+}
+
+function setLastAction(text) {
+    lastActionStripEl.textContent = text ? `Last: ${text}` : '';
 }
 
 function sleep(ms) {
@@ -241,6 +246,9 @@ function render() {
         return;
     }
 
+    // Compute round-end scores once — used in opponent reveal and round summary
+    const roundEndData = gameState.roundOver ? scoreRound(gameState) : null;
+
     startGameBtn.textContent = 'Restart';
 
     // Current player and phase
@@ -289,6 +297,7 @@ function render() {
             await anim;
             if (success) {
                 log(`Player 1 discarded ${cardLabel(discarded)}`);
+                setLastAction(`Player 1 discarded ${cardLabel(discarded)}`);
                 render();
                 await runOtherPlayersTurns();
             } else {
@@ -335,12 +344,30 @@ function render() {
         if (!player.out) {
             const cards = document.createElement('div');
             cards.className = 'opponent-cards';
-            for (let c = 0; c < player.hand.length; c++) {
-                const back = document.createElement('div');
-                back.className = 'card-back-sm';
-                cards.appendChild(back);
+            if (gameState.roundOver && player.hand.length > 0) {
+                // Round over: reveal face-up cards
+                player.hand.forEach(card => {
+                    const cardEl = document.createElement('div');
+                    cardEl.className = 'card-face-sm' + (isRedSuit(card.suit) ? ' red-suit' : '');
+                    cardEl.innerHTML = cardFaceHtml(card);
+                    cards.appendChild(cardEl);
+                });
+            } else {
+                // Normal play: face-down backs
+                for (let c = 0; c < player.hand.length; c++) {
+                    const back = document.createElement('div');
+                    back.className = 'card-back-sm';
+                    cards.appendChild(back);
+                }
             }
             area.appendChild(cards);
+
+            if (roundEndData) {
+                const scoreEl = document.createElement('div');
+                scoreEl.className = 'opponent-round-score';
+                scoreEl.textContent = `Score: ${roundEndData.scores[i]}`;
+                area.appendChild(scoreEl);
+            }
 
             const qtrs = document.createElement('div');
             qtrs.className = 'opponent-quarters';
@@ -379,7 +406,7 @@ function render() {
     // Round summary
     if (isRoundOver) {
         roundSummaryEl.style.display = 'block';
-        const { scores, losers } = scoreRound(gameState);
+        const { scores, losers } = roundEndData;
 
         let html = '';
 
@@ -463,6 +490,7 @@ async function runOtherPlayersTurns() {
         if (!gameState.knocked && preDrawScore >= KNOCK_SCORE_THRESHOLD) {
             knock(gameState);
             log(`Player ${pi + 1} knocked`);
+            setLastAction(`Player ${pi + 1} knocked`);
             showAction(pi, 'Knocked');
             render();
             if (gameState.roundOver) break;
@@ -514,8 +542,10 @@ async function runOtherPlayersTurns() {
 
         if (drewDiscard) {
             log(`Player ${pi + 1} drew discard ${cardLabel(topCard)}`);
+            setLastAction(`Player ${pi + 1} drew discard ${cardLabel(topCard)}`);
         } else {
             log(`Player ${pi + 1} drew stock`);
+            setLastAction(`Player ${pi + 1} drew stock`);
         }
         render();
         if (gameState.roundOver) break;
@@ -533,6 +563,7 @@ async function runOtherPlayersTurns() {
         await discardAnim;
 
         log(`Player ${pi + 1} discarded ${cardLabel(discardedCard)}`);
+        setLastAction(`Player ${pi + 1} discarded ${cardLabel(discardedCard)}`);
         render();
         if (gameState.roundOver) break;
 
@@ -551,6 +582,7 @@ startGameBtn.addEventListener('click', () => {
     isAutoPlaying = false;
     hideMatchOverOverlay();
     turnLog.length = 0;
+    setLastAction('');
     log(`Round starts with Player ${gameState.startingPlayerIndex + 1}`);
     console.log('Game started:', gameState);
     render();
@@ -566,6 +598,7 @@ drawStockBtn.addEventListener('click', async () => {
     isAutoPlaying = false;
     if (success) {
         log('Player 1 drew stock');
+        setLastAction('Player 1 drew stock');
         render();
         if (gameState.roundOver) return;
     }
@@ -582,6 +615,7 @@ drawDiscardBtn.addEventListener('click', async () => {
     isAutoPlaying = false;
     if (success) {
         log(`Player 1 drew discard ${cardLabel(topCard)}`);
+        setLastAction(`Player 1 drew discard ${cardLabel(topCard)}`);
         render();
         if (gameState.roundOver) return;
     }
@@ -598,6 +632,7 @@ discardTopEl.addEventListener('click', () => {
 knockBtn.addEventListener('click', async () => {
     if (knock(gameState)) {
         log('Player 1 knocked');
+        setLastAction('Player 1 knocked');
         render();
         await runOtherPlayersTurns();
     }
@@ -606,6 +641,7 @@ knockBtn.addEventListener('click', async () => {
 hammerBtn.addEventListener('click', () => {
     if (hammer(gameState)) {
         log('Player 1 hammered');
+        setLastAction('Player 1 hammered');
         render();
     }
 });
@@ -626,6 +662,7 @@ nextRoundBtn.addEventListener('click', async () => {
     }
     startNextRound(gameState);
     turnLog.length = 0;
+    setLastAction('');
     log(`Round starts with Player ${gameState.startingPlayerIndex + 1}`);
     console.log('Starting next round');
     render();
@@ -640,6 +677,7 @@ playAgainBtn.addEventListener('click', async () => {
     isAutoPlaying = false;
     hideMatchOverOverlay();
     turnLog.length = 0;
+    setLastAction('');
     log(`Round starts with Player ${gameState.startingPlayerIndex + 1}`);
     render();
     await runOtherPlayersTurns();
@@ -652,6 +690,7 @@ changeSettingsBtn.addEventListener('click', () => {
     isAutoPlaying = false;
     hideMatchOverOverlay();
     turnLog.length = 0;
+    setLastAction('');
     render();
 });
 

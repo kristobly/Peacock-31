@@ -116,6 +116,17 @@ button:disabled {
     color: #eee;
 }
 
+.last-action-strip {
+    margin-left: auto;
+    font-size: 0.88rem;
+    color: #999;
+    font-style: italic;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 260px;
+}
+
 /* === Card Table === */
 #table {
     background: #276b27;
@@ -214,6 +225,13 @@ button:disabled {
     gap: 2px;
     flex-wrap: wrap;
     justify-content: center;
+}
+
+.opponent-round-score {
+    font-size: 0.85rem;
+    font-weight: bold;
+    color: #f0d060;
+    margin-top: 0.25rem;
 }
 
 /* Quarter chip icons */
