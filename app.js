@@ -14,7 +14,6 @@ const nextRoundBtn = document.getElementById('next-round-btn');
 
 // DOM elements - game display
 const currentPlayerEl = document.getElementById('current-player');
-const phaseEl = document.getElementById('phase');
 const playerHandEl = document.getElementById('player-hand');
 const playerScoreEl = document.getElementById('player-score');
 const playerQuartersEl = document.getElementById('player-quarters');
@@ -25,15 +24,13 @@ const otherPlayersEl = document.getElementById('other-players');
 const playerZoneEl = document.getElementById('player-zone');
 const roundSummaryEl = document.getElementById('round-summary');
 const roundResultsEl = document.getElementById('round-results');
-const turnLogEl = document.getElementById('turn-log');
 const ghostCardEl = document.getElementById('ghost-card');
 const actionLabelEl = document.getElementById('action-label');
 const lastActionStripEl = document.getElementById('last-action-strip');
 
-// DOM elements - examples section
-const loadExamplesBtn = document.getElementById('load-examples-btn');
-const exampleHandEl = document.getElementById('example-hand');
-const exampleScoreEl = document.getElementById('example-score');
+// DOM elements - celebration banner
+const instant31BannerEl = document.getElementById('instant31-banner');
+let instant31BannerTimeout = null;
 
 // DOM elements - match over overlay
 const matchOverlayEl = document.getElementById('match-over-overlay');
@@ -46,7 +43,6 @@ const changeSettingsBtn = document.getElementById('change-settings-btn');
 // Game state
 let gameState = null;
 let isAutoPlaying = false;
-const turnLog = [];
 const AI_DELAY_BONUS_MS = 1000;
 
 // Match-level stats (reset on each new match)
@@ -71,22 +67,33 @@ function cardFaceHtml(card) {
            `<span class="card-corner bottom-right">${card.rank}<br>${card.suit}</span>`;
 }
 
-function log(msg) {
-    turnLog.unshift(msg);
-    if (turnLog.length > 12) turnLog.length = 12;
-    renderLog();
-}
-
-function renderLog() {
-    turnLogEl.innerHTML = turnLog.map(m => `<li>${m}</li>`).join('');
-}
-
 function setLastAction(text) {
     lastActionStripEl.textContent = text ? `Last: ${text}` : '';
 }
 
 function sleep(ms) {
     return new Promise(r => setTimeout(r, ms));
+}
+
+function showInstant31Banner(winnerIndex) {
+    if (instant31BannerTimeout) {
+        clearTimeout(instant31BannerTimeout);
+        instant31BannerTimeout = null;
+    }
+    instant31BannerEl.textContent = `Player ${winnerIndex + 1} hit 31!`;
+    instant31BannerEl.classList.remove('hidden');
+    instant31BannerTimeout = setTimeout(() => {
+        instant31BannerEl.classList.add('hidden');
+        instant31BannerTimeout = null;
+    }, 1500);
+}
+
+function hideInstant31Banner() {
+    if (instant31BannerTimeout) {
+        clearTimeout(instant31BannerTimeout);
+        instant31BannerTimeout = null;
+    }
+    instant31BannerEl.classList.add('hidden');
 }
 
 // Animation state
@@ -223,8 +230,8 @@ function hideMatchOverOverlay() {
 function render() {
     if (!gameState) {
         playerZoneEl.classList.remove('active-turn');
+        playerZoneEl.classList.remove('round-loser');
         currentPlayerEl.textContent = '—';
-        phaseEl.textContent = '—';
         playerHandEl.innerHTML = '';
         playerScoreEl.textContent = '—';
         playerQuartersEl.textContent = '';
@@ -242,7 +249,6 @@ function render() {
         discardTopEl.classList.remove('pile-clickable');
         roundSummaryEl.style.display = 'none';
         startGameBtn.textContent = 'Start Game';
-        renderLog();
         return;
     }
 
@@ -251,18 +257,17 @@ function render() {
 
     startGameBtn.textContent = 'Restart';
 
-    // Current player and phase
-    currentPlayerEl.textContent = `Player ${gameState.currentPlayerIndex + 1}`;
-    let phaseText = gameState.phase;
-    if (gameState.knocked) {
-        phaseText += ` (Knocked by Player ${gameState.knockerIndex + 1}, ${gameState.finalTurnsRemaining} turns left)`;
-    }
+    // Current player display (with knock countdown when applicable)
+    let turnText = `Player ${gameState.currentPlayerIndex + 1}`;
     if (gameState.gameOver) {
-        phaseText = 'Game Over';
+        turnText += ' — Game Over';
     } else if (gameState.roundOver) {
-        phaseText = 'Round Over';
+        turnText += ' — Round Over';
+    } else if (gameState.knocked) {
+        const t = gameState.finalTurnsRemaining;
+        turnText += ` (Knocked — ${t} turn${t !== 1 ? 's' : ''} left)`;
     }
-    phaseEl.textContent = phaseText;
+    currentPlayerEl.textContent = turnText;
 
     // Player 1's quarters as chip icons + text
     const p1 = gameState.players[0];
@@ -296,7 +301,6 @@ function render() {
             const success = discardCard(gameState, index);
             await anim;
             if (success) {
-                log(`Player 1 discarded ${cardLabel(discarded)}`);
                 setLastAction(`Player 1 discarded ${cardLabel(discarded)}`);
                 render();
                 await runOtherPlayersTurns();
@@ -330,10 +334,12 @@ function render() {
     otherPlayersEl.innerHTML = '';
     for (let i = 1; i < gameState.players.length; i++) {
         const player = gameState.players[i];
+        const isLoser = roundEndData && roundEndData.losers.includes(i);
         const area = document.createElement('div');
         area.className = 'opponent-area' +
             (player.out ? ' out' : '') +
-            (i === gameState.currentPlayerIndex && !gameState.roundOver ? ' active-turn' : '');
+            (i === gameState.currentPlayerIndex && !gameState.roundOver ? ' active-turn' : '') +
+            (isLoser ? ' round-loser' : '');
         area.dataset.playerIndex = i;
 
         const name = document.createElement('div');
@@ -387,6 +393,10 @@ function render() {
 
     // Turn highlight — player zone
     playerZoneEl.classList.toggle('active-turn', gameState.currentPlayerIndex === 0 && !gameState.roundOver);
+
+    // Round loser indicator — player 1
+    const p1IsLoser = roundEndData && roundEndData.losers.includes(0);
+    playerZoneEl.classList.toggle('round-loser', !!p1IsLoser);
 
     // Enable/disable buttons based on state
     const isPlayer1Turn = gameState.currentPlayerIndex === 0;
@@ -466,8 +476,6 @@ function render() {
     } else {
         roundSummaryEl.style.display = 'none';
     }
-
-    renderLog();
 }
 
 async function runOtherPlayersTurns() {
@@ -482,14 +490,12 @@ async function runOtherPlayersTurns() {
         const pi = gameState.currentPlayerIndex;
         const hand = gameState.players[pi].hand;
 
-        log(`Player ${pi + 1} thinking\u2026`);
         await sleep(300 + AI_DELAY_BONUS_MS);
 
         // --- Knock decision (before drawing) ---
         const preDrawScore = scoreHand(hand);
         if (!gameState.knocked && preDrawScore >= KNOCK_SCORE_THRESHOLD) {
             knock(gameState);
-            log(`Player ${pi + 1} knocked`);
             setLastAction(`Player ${pi + 1} knocked`);
             showAction(pi, 'Knocked');
             render();
@@ -541,11 +547,12 @@ async function runOtherPlayersTurns() {
         }
 
         if (drewDiscard) {
-            log(`Player ${pi + 1} drew discard ${cardLabel(topCard)}`);
             setLastAction(`Player ${pi + 1} drew discard ${cardLabel(topCard)}`);
         } else {
-            log(`Player ${pi + 1} drew stock`);
             setLastAction(`Player ${pi + 1} drew stock`);
+        }
+        if (gameState.roundOver && gameState.roundResultType === 'instant31') {
+            showInstant31Banner(gameState.instant31WinnerIndex);
         }
         render();
         if (gameState.roundOver) break;
@@ -562,7 +569,6 @@ async function runOtherPlayersTurns() {
         discardCard(gameState, discardIndex);
         await discardAnim;
 
-        log(`Player ${pi + 1} discarded ${cardLabel(discardedCard)}`);
         setLastAction(`Player ${pi + 1} discarded ${cardLabel(discardedCard)}`);
         render();
         if (gameState.roundOver) break;
@@ -581,9 +587,8 @@ startGameBtn.addEventListener('click', () => {
     matchStats = initMatchStats();
     isAutoPlaying = false;
     hideMatchOverOverlay();
-    turnLog.length = 0;
+    hideInstant31Banner();
     setLastAction('');
-    log(`Round starts with Player ${gameState.startingPlayerIndex + 1}`);
     console.log('Game started:', gameState);
     render();
 });
@@ -597,8 +602,10 @@ drawStockBtn.addEventListener('click', async () => {
     await anim;
     isAutoPlaying = false;
     if (success) {
-        log('Player 1 drew stock');
         setLastAction('Player 1 drew stock');
+        if (gameState.roundOver && gameState.roundResultType === 'instant31') {
+            showInstant31Banner(gameState.instant31WinnerIndex);
+        }
         render();
         if (gameState.roundOver) return;
     }
@@ -614,8 +621,10 @@ drawDiscardBtn.addEventListener('click', async () => {
     await anim;
     isAutoPlaying = false;
     if (success) {
-        log(`Player 1 drew discard ${cardLabel(topCard)}`);
         setLastAction(`Player 1 drew discard ${cardLabel(topCard)}`);
+        if (gameState.roundOver && gameState.roundResultType === 'instant31') {
+            showInstant31Banner(gameState.instant31WinnerIndex);
+        }
         render();
         if (gameState.roundOver) return;
     }
@@ -631,7 +640,6 @@ discardTopEl.addEventListener('click', () => {
 
 knockBtn.addEventListener('click', async () => {
     if (knock(gameState)) {
-        log('Player 1 knocked');
         setLastAction('Player 1 knocked');
         render();
         await runOtherPlayersTurns();
@@ -640,7 +648,6 @@ knockBtn.addEventListener('click', async () => {
 
 hammerBtn.addEventListener('click', () => {
     if (hammer(gameState)) {
-        log('Player 1 hammered');
         setLastAction('Player 1 hammered');
         render();
     }
@@ -661,9 +668,8 @@ nextRoundBtn.addEventListener('click', async () => {
         return;
     }
     startNextRound(gameState);
-    turnLog.length = 0;
+    hideInstant31Banner();
     setLastAction('');
-    log(`Round starts with Player ${gameState.startingPlayerIndex + 1}`);
     console.log('Starting next round');
     render();
     await runOtherPlayersTurns();
@@ -676,9 +682,8 @@ playAgainBtn.addEventListener('click', async () => {
     matchStats = initMatchStats();
     isAutoPlaying = false;
     hideMatchOverOverlay();
-    turnLog.length = 0;
+    hideInstant31Banner();
     setLastAction('');
-    log(`Round starts with Player ${gameState.startingPlayerIndex + 1}`);
     render();
     await runOtherPlayersTurns();
 });
@@ -689,41 +694,8 @@ changeSettingsBtn.addEventListener('click', () => {
     matchStats = initMatchStats();
     isAutoPlaying = false;
     hideMatchOverOverlay();
-    turnLog.length = 0;
     setLastAction('');
     render();
-});
-
-// Example hands for verification (separate section)
-const exampleHands = [
-    // 7♠, 9♥, K♦ -> all different suits, highest card is K (10) -> score 10
-    [
-        { rank: '7', suit: '♠' },
-        { rank: '9', suit: '♥' },
-        { rank: 'K', suit: '♦' }
-    ],
-    // 7♠, 9♠, K♠ -> all spades -> 7 + 9 + 10 = 26
-    [
-        { rank: '7', suit: '♠' },
-        { rank: '9', suit: '♠' },
-        { rank: 'K', suit: '♠' }
-    ],
-    // A♣, K♣, 10♣ -> all clubs -> 11 + 10 + 10 = 31
-    [
-        { rank: 'A', suit: '♣' },
-        { rank: 'K', suit: '♣' },
-        { rank: '10', suit: '♣' }
-    ]
-];
-
-let exampleIndex = 0;
-
-loadExamplesBtn.addEventListener('click', () => {
-    const hand = exampleHands[exampleIndex];
-    exampleHandEl.textContent = hand.map(cardLabel).join('  ');
-    exampleScoreEl.textContent = scoreHand(hand);
-    console.log(`Example ${exampleIndex + 1}:`, hand.map(cardLabel).join(', '), '-> Score:', scoreHand(hand));
-    exampleIndex = (exampleIndex + 1) % exampleHands.length;
 });
 
 // Initial render

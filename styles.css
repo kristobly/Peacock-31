@@ -103,7 +103,8 @@ button:disabled {
 /* === Status Bar === */
 #status-bar {
     display: flex;
-    gap: 2.5rem;
+    gap: 1.5rem;
+    flex-wrap: wrap;
     background: rgba(0, 0, 0, 0.35);
     border-radius: 7px;
     padding: 0.6rem 1.25rem;
@@ -124,7 +125,7 @@ button:disabled {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    max-width: 260px;
+    max-width: 420px;
 }
 
 /* === Card Table === */
@@ -162,6 +163,7 @@ button:disabled {
     border-radius: 10px;
     padding: 0.6rem 1rem 0.75rem;
     min-width: 120px;
+    position: relative;
 }
 
 .opponent-area.out {
@@ -352,6 +354,7 @@ button:disabled {
 #player-zone {
     border-top: 1px solid rgba(255, 255, 255, 0.15);
     padding-top: 1.25rem;
+    position: relative;
 }
 
 #player-info {
@@ -569,53 +572,6 @@ button:disabled {
     font-size: 1.5rem;
 }
 
-/* === Turn Log === */
-#turn-log-section {
-    background: rgba(0, 0, 0, 0.25);
-    border-radius: 8px;
-    padding: 1rem 1.25rem;
-    margin-bottom: 1.5rem;
-}
-
-#turn-log-section p {
-    margin: 0 0 0.4rem 0;
-    font-size: 1rem;
-    color: #bbb;
-}
-
-#turn-log {
-    margin: 0;
-    padding-left: 1.25rem;
-    font-size: 0.95rem;
-    color: #999;
-    line-height: 1.8;
-}
-
-/* === Examples Section === */
-#examples-section {
-    background: rgba(0, 0, 0, 0.2);
-    border-radius: 8px;
-    padding: 1rem 1.25rem;
-    color: #888;
-    font-size: 0.9rem;
-}
-
-#examples-section h3 {
-    margin: 0 0 0.6rem 0;
-    font-size: 0.95rem;
-    color: #aaa;
-}
-
-#examples-section button {
-    font-size: 0.9rem;
-    padding: 0.3rem 0.75rem;
-    margin-bottom: 0.5rem;
-}
-
-#examples-section p {
-    margin: 0.3rem 0;
-}
-
 /* === Ghost Card Animation === */
 #ghost-card {
     position: fixed;
@@ -799,4 +755,178 @@ button:disabled {
 
 #change-settings-btn:hover:not(:disabled) {
     background: rgba(255, 255, 255, 0.2);
+}
+
+/* === Round Loser Indicator === */
+.round-loser {
+    box-shadow: 0 0 0 3px #cc1111, 0 0 22px rgba(200, 20, 20, 0.55) !important;
+    border-radius: 10px;
+}
+
+.round-loser::before {
+    content: 'LOSER';
+    position: absolute;
+    top: -11px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #cc1111;
+    color: #fff;
+    font-size: 0.7rem;
+    font-weight: bold;
+    font-style: normal;
+    padding: 2px 8px;
+    border-radius: 4px;
+    letter-spacing: 0.12em;
+    z-index: 10;
+    white-space: nowrap;
+}
+
+/* === Instant 31 Celebration Banner === */
+.instant31-banner {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: linear-gradient(135deg, #ffd700, #ff8c00);
+    color: #fff;
+    font-size: 2rem;
+    font-weight: bold;
+    padding: 1.25rem 3rem;
+    border-radius: 1rem;
+    z-index: 1100;
+    text-align: center;
+    box-shadow: 0 6px 32px rgba(0, 0, 0, 0.6);
+    text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.4);
+    pointer-events: none;
+}
+
+.instant31-banner.hidden {
+    display: none;
+}
+
+/* === Responsive Layout === */
+@media (max-width: 640px) {
+    #app {
+        padding: 1rem 0.75rem;
+    }
+
+    h1 {
+        font-size: 1.6rem;
+    }
+
+    #piles-zone {
+        gap: 2rem;
+    }
+
+    .pile-card {
+        width: 80px;
+        height: 112px;
+        font-size: 0.9rem;
+    }
+
+    .card-btn {
+        width: 80px;
+        height: 112px;
+        font-size: 0.9rem;
+        padding: 4px;
+    }
+
+    .card-center-pip {
+        font-size: 2.1rem;
+    }
+
+    .card-back-sm {
+        width: 36px;
+        height: 50px;
+    }
+
+    .card-face-sm {
+        width: 50px;
+        height: 70px;
+        padding: 3px;
+    }
+
+    .card-face-sm .card-center-pip {
+        font-size: 1.2rem;
+    }
+
+    .opponent-area {
+        min-width: 100px;
+        padding: 0.4rem 0.7rem 0.55rem;
+    }
+
+    #other-players {
+        gap: 0.75rem;
+    }
+
+    #player-hand {
+        gap: 0.65rem;
+    }
+}
+
+@media (max-width: 420px) {
+    #app {
+        padding: 0.75rem 0.5rem;
+    }
+
+    h1 {
+        font-size: 1.35rem;
+    }
+
+    #piles-zone {
+        gap: 1.25rem;
+    }
+
+    .pile-card {
+        width: 68px;
+        height: 95px;
+        font-size: 0.8rem;
+    }
+
+    .card-btn {
+        width: 68px;
+        height: 95px;
+        font-size: 0.8rem;
+        padding: 3px;
+    }
+
+    .card-center-pip {
+        font-size: 1.7rem;
+    }
+
+    .card-corner {
+        font-size: 0.72rem;
+    }
+
+    .card-back-sm {
+        width: 30px;
+        height: 42px;
+    }
+
+    .card-face-sm {
+        width: 42px;
+        height: 59px;
+        padding: 2px;
+    }
+
+    .card-face-sm .card-center-pip {
+        font-size: 1rem;
+    }
+
+    .opponent-area {
+        min-width: 88px;
+    }
+
+    #other-players {
+        gap: 0.5rem;
+    }
+
+    #player-hand {
+        gap: 0.5rem;
+    }
+
+    button {
+        font-size: 0.88rem;
+        padding: 0.4rem 0.8rem;
+    }
 }

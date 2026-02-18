@@ -31,7 +31,6 @@
 
         <div id="status-bar">
             <span>Turn: <strong id="current-player">—</strong></span>
-            <span>Phase: <strong id="phase">—</strong></span>
             <span id="last-action-strip" class="last-action-strip"></span>
         </div>
 
@@ -70,21 +69,11 @@
             <div id="round-results"></div>
         </section>
 
-        <div id="turn-log-section">
-            <p><strong>Turn Log:</strong></p>
-            <ul id="turn-log"></ul>
-        </div>
-
-        <section id="examples-section">
-            <h3>Example Hands (for testing scoring)</h3>
-            <button id="load-examples-btn">Load Examples</button>
-            <p>Hand: <span id="example-hand">—</span></p>
-            <p>Score: <span id="example-score">—</span></p>
-        </section>
     </div>
 
     <div id="ghost-card"></div>
     <div id="action-label" class="action-label"></div>
+    <div id="instant31-banner" class="instant31-banner hidden"></div>
 
     <!-- Match Over Overlay -->
     <div id="match-over-overlay" class="match-overlay hidden">

@@ -1,5 +1,5 @@
 import { createDeck, shuffle, deal } from './cards.js';
-import { scoreHand, cardValue } from './rules.js';
+import { scoreHand, cardValue, isInstant31 } from './rules.js';
 
 /**
  * Start a new game with the given number of players.
@@ -54,15 +54,29 @@ export function suitTotals(hand) {
 
 /**
  * Check if a hand has exactly 31 in any suit.
+ * Delegates to isInstant31 which requires exactly 3 same-suit cards summing to 31.
  */
 export function hasInstant31(hand) {
-    const totals = suitTotals(hand);
-    return Object.values(totals).some(total => total === 31);
+    return isInstant31(hand);
 }
 
 /**
- * Check if any player has instant 31. If so, end the round.
- * Returns true if instant 31 was found.
+ * For a 4-card hand, find which card to discard to achieve an instant 31 3-card hand.
+ * Tries skipping each index in order (0,1,2,3); returns the first skip index where
+ * the remaining 3 cards form an instant 31. Returns -1 if none found.
+ */
+function findInstant31DiscardIndex(hand) {
+    if (hand.length !== 4) return -1;
+    for (let skip = 0; skip < 4; skip++) {
+        const subset = hand.filter((_, i) => i !== skip);
+        if (isInstant31(subset)) return skip;
+    }
+    return -1;
+}
+
+/**
+ * Check if any player has instant 31 (exactly 3 same-suit cards totaling 31).
+ * If so, end the round. Returns true if instant 31 was found.
  */
 export function checkInstant31(state) {
     if (state.roundOver) {
@@ -71,7 +85,7 @@ export function checkInstant31(state) {
 
     for (let i = 0; i < state.players.length; i++) {
         if (state.players[i].out) continue;
-        if (hasInstant31(state.players[i].hand)) {
+        if (isInstant31(state.players[i].hand)) {
             state.roundOver = true;
             state.roundResultType = 'instant31';
             state.instant31WinnerIndex = i;
@@ -108,7 +122,21 @@ export function drawFromStock(state) {
 
     state.hammerAvailable = false;
     const card = state.stock.shift();
-    state.players[state.currentPlayerIndex].hand.push(card);
+    const hand = state.players[state.currentPlayerIndex].hand;
+    hand.push(card);
+
+    // Auto-complete: if the 4-card hand contains a 31 subset, discard the extra card
+    const skipIdx = findInstant31DiscardIndex(hand);
+    if (skipIdx >= 0) {
+        const discarded = hand.splice(skipIdx, 1)[0];
+        state.discard.push(discarded);
+        state.roundOver = true;
+        state.roundResultType = 'instant31';
+        state.instant31WinnerIndex = state.currentPlayerIndex;
+        state.phase = 'needDraw';
+        return true;
+    }
+
     state.phase = 'needDiscard';
     checkInstant31(state);
     return true;
@@ -128,7 +156,21 @@ export function drawFromDiscard(state) {
 
     state.hammerAvailable = false;
     const card = state.discard.pop();
-    state.players[state.currentPlayerIndex].hand.push(card);
+    const hand = state.players[state.currentPlayerIndex].hand;
+    hand.push(card);
+
+    // Auto-complete: if the 4-card hand contains a 31 subset, discard the extra card
+    const skipIdx = findInstant31DiscardIndex(hand);
+    if (skipIdx >= 0) {
+        const discarded = hand.splice(skipIdx, 1)[0];
+        state.discard.push(discarded);
+        state.roundOver = true;
+        state.roundResultType = 'instant31';
+        state.instant31WinnerIndex = state.currentPlayerIndex;
+        state.phase = 'needDraw';
+        return true;
+    }
+
     state.phase = 'needDiscard';
     checkInstant31(state);
     return true;

@@ -9,6 +9,19 @@ export function cardValue(card) {
 }
 
 /**
+ * Check if a hand is an instant 31:
+ * - Exactly 3 cards
+ * - All same suit
+ * - Card values sum to exactly 31 (A=11, 10/J/Q/K=10, 2-9 face value)
+ */
+export function isInstant31(hand) {
+    if (hand.length !== 3) return false;
+    const suit = hand[0].suit;
+    if (!hand.every(c => c.suit === suit)) return false;
+    return hand.reduce((sum, c) => sum + cardValue(c), 0) === 31;
+}
+
+/**
  * Score a 3-card hand.
  * - Compute total points by suit, take the maximum suit total
  * - If all three cards are different suits, score is the highest single card value
