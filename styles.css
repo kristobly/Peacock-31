@@ -804,6 +804,146 @@ button:disabled {
     display: none;
 }
 
+/* === Help Button === */
+#help-btn {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: rgba(240, 208, 96, 0.18);
+    border: 1.5px solid #f0d060;
+    color: #f0d060;
+    font-size: 1rem;
+    font-weight: bold;
+    font-family: 'Georgia', serif;
+    padding: 0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: background 0.15s;
+    line-height: 1;
+}
+
+#help-btn:hover {
+    background: rgba(240, 208, 96, 0.35);
+    transform: none;
+}
+
+/* === Tutorial Overlay (click blocker) === */
+.tutorial-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1500;
+    pointer-events: all;
+    background: transparent;
+}
+
+.tutorial-overlay.hidden {
+    display: none;
+}
+
+/* === Tutorial Spotlight === */
+/* box-shadow spreads 9999px to darken everything outside this element */
+.tutorial-spotlight {
+    position: fixed;
+    z-index: 1501;
+    pointer-events: none;
+    border-radius: 10px;
+    box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.65);
+    outline: 3px solid #f0d060;
+    outline-offset: 3px;
+    transition: top 0.22s ease, left 0.22s ease, width 0.22s ease, height 0.22s ease;
+}
+
+.tutorial-spotlight.hidden {
+    display: none;
+}
+
+/* === Tutorial Bubble === */
+.tutorial-bubble {
+    position: fixed;
+    z-index: 1502;
+    background: #1a3a1a;
+    border: 2px solid #5a9a5a;
+    border-radius: 12px;
+    padding: 1.1rem 1.3rem;
+    width: 300px;
+    max-width: calc(100vw - 24px);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.75);
+    color: #f0f0f0;
+    font-family: 'Georgia', serif;
+}
+
+.tutorial-bubble.hidden {
+    display: none;
+}
+
+.tutorial-text {
+    margin: 0 0 0.9rem 0;
+    font-size: 1rem;
+    line-height: 1.55;
+    color: #eee;
+}
+
+.tutorial-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+
+.tutorial-counter {
+    font-size: 0.8rem;
+    color: #888;
+    white-space: nowrap;
+}
+
+.tutorial-buttons {
+    display: flex;
+    gap: 0.4rem;
+    align-items: center;
+}
+
+#tutorial-back-btn {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: #777;
+    color: #ccc;
+    font-size: 0.88rem;
+    padding: 0.3rem 0.75rem;
+}
+
+#tutorial-back-btn:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.18);
+}
+
+#tutorial-next-btn {
+    background: #f0d060;
+    border-color: #c8a800;
+    color: #333;
+    font-size: 0.88rem;
+    padding: 0.3rem 0.85rem;
+}
+
+#tutorial-next-btn:hover:not(:disabled) {
+    background: #ffe04a;
+}
+
+#tutorial-skip-btn {
+    background: transparent;
+    border: none;
+    color: #777;
+    font-size: 0.82rem;
+    padding: 0.3rem 0.4rem;
+    text-decoration: underline;
+    font-weight: normal;
+}
+
+#tutorial-skip-btn:hover:not(:disabled) {
+    color: #aaa;
+    background: transparent;
+}
+
 /* === Responsive Layout === */
 @media (max-width: 640px) {
     #app {

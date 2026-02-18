@@ -10,6 +10,7 @@
     <div id="app">
         <header id="app-header">
             <h1>Peacock 31</h1>
+            <button id="help-btn" title="How to play">?</button>
             <section id="game-controls">
                 <label for="player-count">Players:</label>
                 <select id="player-count">
@@ -85,6 +86,23 @@
             <div class="match-overlay-buttons">
                 <button id="play-again-btn">Play Again</button>
                 <button id="change-settings-btn">Change Settings</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tutorial Overlay (click blocker) -->
+    <div id="tutorial-overlay" class="tutorial-overlay hidden"></div>
+    <!-- Tutorial Spotlight (box-shadow darkens everything outside) -->
+    <div id="tutorial-spotlight" class="tutorial-spotlight hidden"></div>
+    <!-- Tutorial Instruction Bubble -->
+    <div id="tutorial-bubble" class="tutorial-bubble hidden">
+        <p id="tutorial-text" class="tutorial-text"></p>
+        <div class="tutorial-footer">
+            <span id="tutorial-counter" class="tutorial-counter"></span>
+            <div class="tutorial-buttons">
+                <button id="tutorial-back-btn">Back</button>
+                <button id="tutorial-next-btn">Next</button>
+                <button id="tutorial-skip-btn">Skip</button>
             </div>
         </div>
     </div>

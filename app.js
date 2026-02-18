@@ -700,3 +700,159 @@ changeSettingsBtn.addEventListener('click', () => {
 
 // Initial render
 render();
+
+// === Tutorial / Coach Marks ===
+const TUTORIAL_LS_KEY = 'peacock31_tutorialSeen';
+
+const TUTORIAL_STEPS = [
+    {
+        selector: '#player-zone',
+        text: 'Your 3 cards appear here. After drawing, click one to discard it. Collect same-suit cards as close to 31 as possible — Ace counts 11!',
+    },
+    {
+        selector: '#stock-display',
+        text: 'Click the stock pile on your turn to draw a mystery face-down card. Good for switching suits.',
+    },
+    {
+        selector: '#discard-top',
+        text: 'The discard pile shows the top card. Grab it if it helps your hand — but everyone can see what you took!',
+    },
+    {
+        selector: '#player-info',
+        text: 'Your quarters (lives) and current score appear here. You start with 4 quarters. The round\'s lowest scorer pays 1. Lose them all and you\'re out!',
+    },
+    {
+        selector: '#status-bar',
+        text: 'Shows whose turn it is and recent moves. Use Knock in the controls above when confident — everyone gets one final draw. Hit exactly 31 to win the round instantly!',
+    },
+];
+
+const tutorialOverlayEl = document.getElementById('tutorial-overlay');
+const tutorialSpotlightEl = document.getElementById('tutorial-spotlight');
+const tutorialBubbleEl = document.getElementById('tutorial-bubble');
+const tutorialTextEl = document.getElementById('tutorial-text');
+const tutorialCounterEl = document.getElementById('tutorial-counter');
+const tutorialBackBtn = document.getElementById('tutorial-back-btn');
+const tutorialNextBtn = document.getElementById('tutorial-next-btn');
+const tutorialSkipBtn = document.getElementById('tutorial-skip-btn');
+const helpBtn = document.getElementById('help-btn');
+
+let tutorialCurrentStep = 0;
+
+function positionTutorialBubble(targetRect) {
+    const PAD = 18;
+    const vpW = window.innerWidth;
+    const vpH = window.innerHeight;
+    const bubbleW = Math.min(300, vpW - 24);
+
+    // Try placing below target
+    let left = targetRect.left + targetRect.width / 2 - bubbleW / 2;
+    let top = targetRect.bottom + PAD;
+
+    // Clamp horizontal within viewport
+    left = Math.max(12, Math.min(left, vpW - bubbleW - 12));
+
+    // Estimate bubble height (can't read actual height before paint; use approx)
+    const estBubbleH = 130;
+
+    // If bubble goes below viewport, try above target
+    if (top + estBubbleH > vpH - 12) {
+        top = targetRect.top - PAD - estBubbleH;
+    }
+
+    // If still off the top, center vertically in viewport
+    if (top < 12) {
+        top = Math.max(12, vpH / 2 - estBubbleH / 2);
+    }
+
+    tutorialBubbleEl.style.left = `${left}px`;
+    tutorialBubbleEl.style.top = `${top}px`;
+    tutorialBubbleEl.style.width = `${bubbleW}px`;
+}
+
+function showTutorialStep(requestedIndex) {
+    // Determine direction so we can skip invalid steps the right way
+    const direction = requestedIndex >= tutorialCurrentStep ? 1 : -1;
+    let i = requestedIndex;
+
+    while (i >= 0 && i < TUTORIAL_STEPS.length) {
+        const el = document.querySelector(TUTORIAL_STEPS[i].selector);
+        if (el) {
+            const rect = el.getBoundingClientRect();
+            if (rect.width > 0 || rect.height > 0) break; // valid step
+        }
+        i += direction;
+    }
+
+    // Exhausted steps going forward → close tutorial
+    if (i >= TUTORIAL_STEPS.length) {
+        closeTutorial();
+        return;
+    }
+
+    // Exhausted steps going backward → stay at 0
+    if (i < 0) i = 0;
+
+    tutorialCurrentStep = i;
+    const step = TUTORIAL_STEPS[i];
+    const el = document.querySelector(step.selector);
+    const rect = el.getBoundingClientRect();
+
+    // Position spotlight with padding
+    const SP = 8;
+    tutorialSpotlightEl.style.top = `${rect.top - SP}px`;
+    tutorialSpotlightEl.style.left = `${rect.left - SP}px`;
+    tutorialSpotlightEl.style.width = `${rect.width + SP * 2}px`;
+    tutorialSpotlightEl.style.height = `${rect.height + SP * 2}px`;
+
+    // Update bubble content
+    tutorialTextEl.textContent = step.text;
+    tutorialCounterEl.textContent = `${i + 1} / ${TUTORIAL_STEPS.length}`;
+    tutorialBackBtn.style.visibility = i === 0 ? 'hidden' : 'visible';
+    tutorialNextBtn.textContent = i === TUTORIAL_STEPS.length - 1 ? 'Done' : 'Next';
+
+    positionTutorialBubble(rect);
+}
+
+function openTutorial() {
+    tutorialCurrentStep = 0;
+    tutorialOverlayEl.classList.remove('hidden');
+    tutorialSpotlightEl.classList.remove('hidden');
+    tutorialBubbleEl.classList.remove('hidden');
+    showTutorialStep(0);
+}
+
+function closeTutorial() {
+    tutorialOverlayEl.classList.add('hidden');
+    tutorialSpotlightEl.classList.add('hidden');
+    tutorialBubbleEl.classList.add('hidden');
+    localStorage.setItem(TUTORIAL_LS_KEY, '1');
+}
+
+tutorialNextBtn.addEventListener('click', () => {
+    if (tutorialCurrentStep >= TUTORIAL_STEPS.length - 1) {
+        closeTutorial();
+    } else {
+        showTutorialStep(tutorialCurrentStep + 1);
+    }
+});
+
+tutorialBackBtn.addEventListener('click', () => {
+    if (tutorialCurrentStep > 0) showTutorialStep(tutorialCurrentStep - 1);
+});
+
+tutorialSkipBtn.addEventListener('click', closeTutorial);
+
+helpBtn.addEventListener('click', openTutorial);
+
+// Reposition on window resize
+window.addEventListener('resize', () => {
+    if (!tutorialOverlayEl.classList.contains('hidden')) {
+        showTutorialStep(tutorialCurrentStep);
+    }
+});
+
+// First-run: auto-show tutorial on initial load
+if (!localStorage.getItem(TUTORIAL_LS_KEY)) {
+    openTutorial();
+}
