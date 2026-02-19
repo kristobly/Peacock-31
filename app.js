@@ -863,6 +863,10 @@ const TUTORIAL_STEPS = [
         selector: '#status-bar',
         text: 'Shows whose turn it is and recent moves. Use Knock (near your hand) when confident — everyone gets one final draw. Hit exactly 31 to win the round instantly!',
     },
+    {
+        selector: '#options-btn',
+        text: 'Tap the gear to switch themes — Vegas Felt, Michigan Midnight, Neon Arcade, and more. Your theme is saved automatically.',
+    },
 ];
 
 const tutorialOverlayEl = document.getElementById('tutorial-overlay');
