@@ -1,5 +1,5 @@
 import { cardLabel } from './src/cards.js';
-import { startGame, drawFromStock, drawFromDiscard, discardCard, getTopDiscard, knock, hammer, scoreRound, applyRoundResults, startNextRound } from './src/game.js';
+import { startGame, drawFromStock, drawFromDiscard, discardCard, getTopDiscard, knock, hammer, scoreRound, applyRoundResults, startNextRound, checkInstant31 } from './src/game.js';
 import { scoreHand, cardValue } from './src/rules.js';
 import { pickTargetSuit, chooseDiscardIndex } from './src/ai.js';
 
@@ -23,8 +23,6 @@ const stockCountEl = document.getElementById('stock-count');
 const stockDisplayEl = document.getElementById('stock-display');
 const otherPlayersEl = document.getElementById('other-players');
 const playerZoneEl = document.getElementById('player-zone');
-const roundSummaryEl = document.getElementById('round-summary');
-const roundResultsEl = document.getElementById('round-results');
 const ghostCardEl = document.getElementById('ghost-card');
 const knockRingEl = document.getElementById('knock-ring');
 const actionLabelEl = document.getElementById('action-label');
@@ -310,7 +308,6 @@ function render() {
         nextRoundBtn.disabled = true;
         stockDisplayEl.classList.remove('pile-clickable');
         discardTopEl.classList.remove('pile-clickable');
-        roundSummaryEl.style.display = 'none';
         startGameBtn.textContent = 'Start Game';
         return;
     }
@@ -499,73 +496,14 @@ function render() {
     stockDisplayEl.classList.toggle('pile-clickable', !drawStockBtn.disabled);
     discardTopEl.classList.toggle('pile-clickable', !drawDiscardBtn.disabled);
 
-    // Round summary
-    if (isRoundOver) {
-        roundSummaryEl.style.display = 'block';
-        const { scores, losers } = roundEndData;
-
-        let html = '';
-
-        // Game over winner message
-        if (isGameOver) {
-            const endMsg = gameState.winnerIndex !== null
-                ? `Winner: Player ${gameState.winnerIndex + 1}!`
-                : `It's a tie — everyone is out!`;
-            html += `<p><strong style="font-size: 1.5em;">${endMsg}</strong></p>`;
-        }
-
-        // Show round result type message
-        if (gameState.roundResultType === 'instant31') {
-            html += `<p><strong>Instant 31: Player ${gameState.instant31WinnerIndex + 1}</strong></p>`;
-        } else if (gameState.roundResultType === 'hammer') {
-            html += `<p><strong>The Hammer! Player ${gameState.startingPlayerIndex + 1} slammed down their hand.</strong></p>`;
-        }
-
-        html += '<div class="results-list">';
-        for (let i = 0; i < gameState.players.length; i++) {
-            const player = gameState.players[i];
-            if (player.hand.length === 0) {
-                html += `<div class="results-player"><div class="results-player-info"><div class="results-player-name">Player ${i + 1}</div><div class="results-score">OUT</div></div></div>`;
-                continue;
-            }
-            const isLoser = losers.includes(i);
-            const isKnocker = i === gameState.knockerIndex;
-            const isInstant31Winner = gameState.roundResultType === 'instant31' && i === gameState.instant31WinnerIndex;
-
-            const cardsHtml = player.hand.map(card => {
-                const redClass = isRedSuit(card.suit) ? ' red-suit' : '';
-                return `<div class="card-face-sm${redClass}">${cardFaceHtml(card)}</div>`;
-            }).join('');
-
-            let badgesHtml = '';
-            if (isKnocker) badgesHtml += '<span class="badge">Knocker</span>';
-            if (isInstant31Winner) badgesHtml += '<span class="badge badge-31">31!</span>';
-            if (isLoser) badgesHtml += '<span class="badge badge-lost">LOST −¼</span>';
-            if (isLoser && player.quarters === 0) badgesHtml += '<span class="badge badge-lost">ELIMINATED</span>';
-
-            html += `
-                <div class="results-player${isLoser ? ' results-loser' : ''}">
-                    <div class="results-player-info">
-                        <div class="results-player-name">Player ${i + 1}</div>
-                        <div class="results-score">${scores[i]} pts</div>
-                        <div class="results-badges">${badgesHtml}</div>
-                    </div>
-                    <div class="results-hand">${cardsHtml}</div>
-                </div>`;
-        }
-        html += '</div>';
-
-        const loserNames = losers.map(i => `Player ${i + 1}`).join(', ');
-        html += `<p style="margin-top:0.75rem;"><strong>Loser(s):</strong> ${loserNames} (-1 quarter each)</p>`;
-
-        roundResultsEl.innerHTML = html;
-    } else {
-        roundSummaryEl.style.display = 'none';
-    }
 }
 
 async function runOtherPlayersTurns() {
-    if (!gameState || gameState.roundOver || gameState.gameOver) return;
+    if (!gameState || gameState.roundOver || gameState.gameOver) {
+        isAutoPlaying = false;
+        render();
+        return;
+    }
 
     isAutoPlaying = true;
     render();
@@ -702,6 +640,9 @@ startGameBtn.addEventListener('click', () => {
     hideInstant31Banner();
     setLastAction('');
     logAITemperaments();
+    if (checkInstant31(gameState)) {
+        showInstant31Banner(gameState.instant31WinnerIndex);
+    }
     render();
 });
 
@@ -784,6 +725,11 @@ nextRoundBtn.addEventListener('click', async () => {
     hideInstant31Banner();
     setLastAction('');
     console.log('Starting next round');
+    if (checkInstant31(gameState)) {
+        showInstant31Banner(gameState.instant31WinnerIndex);
+        render();
+        return;
+    }
     render();
     await runOtherPlayersTurns();
 });
@@ -798,6 +744,11 @@ playAgainBtn.addEventListener('click', async () => {
     hideInstant31Banner();
     setLastAction('');
     logAITemperaments();
+    if (checkInstant31(gameState)) {
+        showInstant31Banner(gameState.instant31WinnerIndex);
+        render();
+        return;
+    }
     render();
     await runOtherPlayersTurns();
 });
@@ -837,7 +788,7 @@ const TUTORIAL_STEPS = [
     },
     {
         selector: '#status-bar',
-        text: 'Shows whose turn it is and recent moves. Use Knock in the controls above when confident — everyone gets one final draw. Hit exactly 31 to win the round instantly!',
+        text: 'Shows whose turn it is and recent moves. Use Knock (near your hand) when confident — everyone gets one final draw. Hit exactly 31 to win the round instantly!',
     },
 ];
 

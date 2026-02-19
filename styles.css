@@ -381,6 +381,33 @@ button:disabled {
     color: #ddd;
 }
 
+#player-actions {
+    display: flex;
+    gap: 0.6rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+}
+
+#hammer-btn {
+    background: #5a4010;
+    border-color: #8a6820;
+    color: #f0d060;
+}
+
+#hammer-btn:hover:not(:disabled) {
+    background: #6e5018;
+}
+
+#knock-btn {
+    background: #b05810;
+    border-color: #c87020;
+    color: #fff;
+}
+
+#knock-btn:hover:not(:disabled) {
+    background: #c86820;
+}
+
 #player-hand {
     display: flex;
     gap: 1.1rem;
@@ -452,96 +479,7 @@ button:disabled {
     color: #cc0000;
 }
 
-/* === Round Summary === */
-#round-summary {
-    margin-bottom: 1.5rem;
-    padding: 1.25rem 1.5rem;
-    background: rgba(0, 0, 0, 0.55);
-    border: 1px solid #884444;
-    border-radius: 10px;
-    color: #eee;
-}
-
-#round-summary h3 {
-    margin: 0 0 0.75rem 0;
-    color: #ff9999;
-    font-size: 1.4rem;
-}
-
-#round-summary ul {
-    margin: 0.5rem 0;
-    padding-left: 1.5rem;
-    line-height: 1.9;
-    font-size: 1rem;
-}
-
-/* === Round Results Card Display === */
-.results-list {
-    display: flex;
-    flex-direction: column;
-    gap: 0.85rem;
-    margin: 0.75rem 0;
-}
-
-.results-player {
-    display: flex;
-    align-items: center;
-    gap: 0.85rem;
-    flex-wrap: wrap;
-}
-
-.results-player.results-loser .results-player-name {
-    color: #ff9999;
-}
-
-.results-player-info {
-    min-width: 110px;
-}
-
-.results-player-name {
-    font-weight: bold;
-    font-size: 1rem;
-}
-
-.results-score {
-    font-size: 0.88rem;
-    color: #ccc;
-    margin-top: 2px;
-}
-
-.results-hand {
-    display: flex;
-    gap: 6px;
-    flex-wrap: wrap;
-}
-
-.results-badges {
-    display: flex;
-    gap: 4px;
-    margin-top: 4px;
-    flex-wrap: wrap;
-}
-
-.badge {
-    font-size: 0.7rem;
-    padding: 2px 6px;
-    border-radius: 4px;
-    font-weight: bold;
-    background: rgba(255, 255, 255, 0.14);
-    color: #ddd;
-}
-
-.badge-lost {
-    background: rgba(200, 50, 50, 0.4);
-    color: #ffaaaa;
-}
-
-.badge-31 {
-    background: rgba(50, 200, 50, 0.35);
-    color: #aaffaa;
-}
-
-/* Small card face used in round results */
+/* Small card face used in round-end on-table reveal */
 .card-face-sm {
     width: 58px;
     height: 82px;

@@ -24,8 +24,6 @@
                 <span class="controls-sep">|</span>
                 <button id="draw-stock-btn" disabled>Draw Stock</button>
                 <button id="draw-discard-btn" disabled>Draw Discard</button>
-                <button id="knock-btn" disabled>Knock</button>
-                <button id="hammer-btn" disabled>Hammer</button>
                 <button id="next-round-btn" disabled>Next Round</button>
             </section>
         </header>
@@ -61,14 +59,13 @@
                     <span id="player-quarters"></span>
                     <span class="score-label">Score: <strong id="player-score">—</strong></span>
                 </div>
+                <div id="player-actions">
+                    <button id="hammer-btn" disabled>⚒ Hammer</button>
+                    <button id="knock-btn" disabled>✊ Knock</button>
+                </div>
                 <div id="player-hand"></div>
             </div>
         </div>
-
-        <section id="round-summary" style="display: none;">
-            <h3>Round Over!</h3>
-            <div id="round-results"></div>
-        </section>
 
     </div>
 
