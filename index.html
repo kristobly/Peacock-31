@@ -11,6 +11,19 @@
         <header id="app-header">
             <h1>Peacock 31</h1>
             <button id="help-btn" title="How to play">?</button>
+            <div class="options-wrapper">
+                <button id="options-btn" title="Options">⚙</button>
+                <div id="options-panel" class="options-panel hidden">
+                    <div class="options-row">
+                        <label for="theme-select">Theme</label>
+                        <select id="theme-select">
+                            <option value="vegas-felt">Vegas Felt</option>
+                            <option value="michigan-midnight">Michigan Midnight</option>
+                            <option value="neon-arcade">Neon Arcade</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
             <section id="game-controls">
                 <label for="player-count">Players:</label>
                 <select id="player-count">

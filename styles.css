@@ -1,3 +1,100 @@
+/* === Theme Variables === */
+:root {
+    /* Vegas Felt (default) */
+    --page-bg: #1a3a1a;
+    --table-felt: #276b27;
+    --table-border: #1c481c;
+    --accent: #f0d060;
+    --accent-dark: #c8a800;
+    --accent-hover: #ffe04a;
+    --accent-text: #333;
+    --card-back-bg: #8b0000;
+    --card-back-text: #ffd700;
+    --panel-bg: #1a3a1a;
+    --panel-border: #5a9a5a;
+    --hammer-bg: #5a4010;
+    --hammer-border: #8a6820;
+    --hammer-text: #f0d060;
+    --hammer-hover-bg: #6e5018;
+    --knock-bg: #b05810;
+    --knock-border: #c87020;
+    --knock-hover-bg: #c86820;
+    --active-glow-shadow: 0 0 0 3px #f0d060, 0 0 18px rgba(240, 208, 96, 0.45);
+    --pile-hover-shadow: 0 0 0 3px #f0d060, 3px 8px 18px rgba(0, 0, 0, 0.65);
+    --has-knocked-shadow: 0 0 0 2px #e07820, 0 0 14px rgba(220, 110, 0, 0.3);
+    --instant31-gradient: linear-gradient(135deg, #ffd700, #ff8c00);
+    --knock-ring-color: rgba(240, 150, 20, 0.9);
+    --knock-ring-glow: rgba(240, 150, 20, 0.35);
+    --knock-ring-mid: rgba(240, 150, 20, 0.6);
+    --knock-ring-fade: rgba(240, 150, 20, 0.2);
+    --accent-glass-18: rgba(240, 208, 96, 0.18);
+    --accent-glass-35: rgba(240, 208, 96, 0.35);
+}
+
+/* --- Michigan Midnight (navy/maize) --- */
+body.theme-michigan-midnight {
+    --page-bg: #07111f;
+    --table-felt: #1e4880;
+    --table-border: #0f2d56;
+    --accent: #FFCB05;
+    --accent-dark: #d4a800;
+    --accent-hover: #ffe84a;
+    --accent-text: #1a1200;
+    --card-back-bg: #00274C;
+    --card-back-text: #FFCB05;
+    --panel-bg: #0a1628;
+    --panel-border: #1a4a8a;
+    --hammer-bg: #001a33;
+    --hammer-border: #0044aa;
+    --hammer-text: #FFCB05;
+    --hammer-hover-bg: #002244;
+    --knock-bg: #00274C;
+    --knock-border: #0057c8;
+    --knock-hover-bg: #003366;
+    --active-glow-shadow: 0 0 0 3px #FFCB05, 0 0 18px rgba(255, 203, 5, 0.45);
+    --pile-hover-shadow: 0 0 0 3px #FFCB05, 3px 8px 18px rgba(0, 0, 0, 0.65);
+    --has-knocked-shadow: 0 0 0 2px #FFCB05, 0 0 14px rgba(255, 203, 5, 0.3);
+    --instant31-gradient: linear-gradient(135deg, #FFCB05, #ff8c00);
+    --knock-ring-color: rgba(255, 203, 5, 0.9);
+    --knock-ring-glow: rgba(255, 203, 5, 0.35);
+    --knock-ring-mid: rgba(255, 203, 5, 0.6);
+    --knock-ring-fade: rgba(255, 203, 5, 0.2);
+    --accent-glass-18: rgba(255, 203, 5, 0.18);
+    --accent-glass-35: rgba(255, 203, 5, 0.35);
+}
+
+/* --- Neon Arcade (dark + neon cyan glow) --- */
+body.theme-neon-arcade {
+    --page-bg: #060a0f;
+    --table-felt: #1b2e45;
+    --table-border: #0e1e2e;
+    --accent: #00e5cc;
+    --accent-dark: #00b8a3;
+    --accent-hover: #00ffcc;
+    --accent-text: #001a17;
+    --card-back-bg: #150028;
+    --card-back-text: #e040ff;
+    --panel-bg: #0d1520;
+    --panel-border: #00e5cc;
+    --hammer-bg: #1a0033;
+    --hammer-border: #7700cc;
+    --hammer-text: #e040ff;
+    --hammer-hover-bg: #220044;
+    --knock-bg: #001a0d;
+    --knock-border: #009944;
+    --knock-hover-bg: #002a15;
+    --active-glow-shadow: 0 0 0 3px #00e5cc, 0 0 18px rgba(0, 229, 204, 0.45);
+    --pile-hover-shadow: 0 0 0 3px #00e5cc, 3px 8px 18px rgba(0, 0, 0, 0.65);
+    --has-knocked-shadow: 0 0 0 2px #00e5cc, 0 0 14px rgba(0, 229, 204, 0.3);
+    --instant31-gradient: linear-gradient(135deg, #e040ff, #00e5cc);
+    --knock-ring-color: rgba(0, 229, 204, 0.9);
+    --knock-ring-glow: rgba(0, 229, 204, 0.35);
+    --knock-ring-mid: rgba(0, 229, 204, 0.6);
+    --knock-ring-fade: rgba(0, 229, 204, 0.2);
+    --accent-glass-18: rgba(0, 229, 204, 0.18);
+    --accent-glass-35: rgba(0, 229, 204, 0.35);
+}
+
 /* === Reset & Base === */
 *, *::before, *::after {
     box-sizing: border-box;
@@ -5,7 +102,7 @@
 
 body {
     font-family: 'Georgia', serif;
-    background: #1a3a1a;
+    background: var(--page-bg);
     color: #f0f0f0;
     margin: 0;
     padding: 0;
@@ -31,7 +128,7 @@ body {
 h1 {
     margin: 0;
     font-size: 2.1rem;
-    color: #f0d060;
+    color: var(--accent);
     text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.6);
     white-space: nowrap;
 }
@@ -85,13 +182,13 @@ button:disabled {
 }
 
 #start-game-btn {
-    background: #f0d060;
-    border-color: #c8a800;
-    color: #333;
+    background: var(--accent);
+    border-color: var(--accent-dark);
+    color: var(--accent-text);
 }
 
 #start-game-btn:hover:not(:disabled) {
-    background: #ffe04a;
+    background: var(--accent-hover);
 }
 
 .controls-sep {
@@ -130,7 +227,7 @@ button:disabled {
 
 /* === Card Table === */
 #table {
-    background: #276b27;
+    background: var(--table-felt);
     border-radius: 18px;
     padding: 1.75rem 1.5rem;
     box-shadow:
@@ -140,7 +237,7 @@ button:disabled {
     flex-direction: column;
     gap: 1.75rem;
     margin-bottom: 1.5rem;
-    border: 3px solid #1c481c;
+    border: 3px solid var(--table-border);
 }
 
 /* === Opponents Zone === */
@@ -172,7 +269,7 @@ button:disabled {
 
 /* Active turn highlight */
 .active-turn {
-    box-shadow: 0 0 0 3px #f0d060, 0 0 18px rgba(240, 208, 96, 0.45);
+    box-shadow: var(--active-glow-shadow);
     border-radius: 8px;
 }
 
@@ -201,9 +298,9 @@ button:disabled {
             transparent 2px,
             transparent 8px
         ),
-        #00274C;
+        var(--card-back-bg);
     border-radius: 5px;
-    border: 1.5px solid #001a38;
+    border: 1.5px solid rgba(255, 255, 255, 0.2);
     box-shadow: 1px 2px 5px rgba(0, 0, 0, 0.5);
     display: flex;
     align-items: center;
@@ -212,7 +309,7 @@ button:disabled {
 
 .card-back-sm::after {
     content: 'KB';
-    color: #FFCB05;
+    color: var(--card-back-text);
     font-size: 0.6rem;
     font-weight: bold;
     font-family: 'Georgia', serif;
@@ -232,7 +329,7 @@ button:disabled {
 .opponent-round-score {
     font-size: 0.85rem;
     font-weight: bold;
-    color: #f0d060;
+    color: var(--accent);
     margin-top: 0.25rem;
 }
 
@@ -291,7 +388,7 @@ button:disabled {
 
 .pile-clickable:hover {
     filter: brightness(1.1);
-    box-shadow: 0 0 0 3px #f0d060, 3px 8px 18px rgba(0, 0, 0, 0.65);
+    box-shadow: var(--pile-hover-shadow);
 }
 
 /* === Card Faces and Backs (pile size) === */
@@ -327,7 +424,7 @@ button:disabled {
     color: #cc0000;
 }
 
-/* Michigan Blue card back with KB in Maize */
+/* Card back with themed color and KB monogram */
 .card-back {
     background:
         repeating-linear-gradient(
@@ -337,12 +434,12 @@ button:disabled {
             transparent 2px,
             transparent 8px
         ),
-        #00274C;
+        var(--card-back-bg);
 }
 
 .card-back::after {
     content: 'KB';
-    color: #FFCB05;
+    color: var(--card-back-text);
     font-size: 1.25rem;
     font-weight: bold;
     font-family: 'Georgia', serif;
@@ -368,7 +465,7 @@ button:disabled {
 .player-label {
     font-size: 1.3rem;
     font-weight: bold;
-    color: #f0d060;
+    color: var(--accent);
 }
 
 #player-quarters {
@@ -389,23 +486,23 @@ button:disabled {
 }
 
 #hammer-btn {
-    background: #5a4010;
-    border-color: #8a6820;
-    color: #f0d060;
+    background: var(--hammer-bg);
+    border-color: var(--hammer-border);
+    color: var(--hammer-text);
 }
 
 #hammer-btn:hover:not(:disabled) {
-    background: #6e5018;
+    background: var(--hammer-hover-bg);
 }
 
 #knock-btn {
-    background: #b05810;
-    border-color: #c87020;
+    background: var(--knock-bg);
+    border-color: var(--knock-border);
     color: #fff;
 }
 
 #knock-btn:hover:not(:disabled) {
-    background: #c86820;
+    background: var(--knock-hover-bg);
 }
 
 #player-hand {
@@ -532,7 +629,7 @@ button:disabled {
     justify-content: center;
 }
 
-/* Back visual: reuses .card-back background + ::after KB text */
+/* Back visual: reuses .card-back background */
 #ghost-card.card-back {
     background:
         repeating-linear-gradient(
@@ -542,7 +639,7 @@ button:disabled {
             transparent 2px,
             transparent 8px
         ),
-        #00274C;
+        var(--card-back-bg);
 }
 
 /* Face visual: reuses .card-face background; add layout overrides */
@@ -590,8 +687,8 @@ button:disabled {
 }
 
 .match-overlay-panel {
-    background: #1a3a1a;
-    border: 2px solid #5a9a5a;
+    background: var(--panel-bg);
+    border: 2px solid var(--panel-border);
     border-radius: 14px;
     padding: 2rem 2.25rem;
     max-width: 520px;
@@ -603,7 +700,7 @@ button:disabled {
 
 .match-over-title {
     font-size: 2.2rem;
-    color: #f0d060;
+    color: var(--accent);
     margin: 0 0 0.5rem 0;
     text-shadow: 1px 1px 6px rgba(0, 0, 0, 0.6);
 }
@@ -672,15 +769,15 @@ button:disabled {
 }
 
 #play-again-btn {
-    background: #f0d060;
-    border-color: #c8a800;
-    color: #333;
+    background: var(--accent);
+    border-color: var(--accent-dark);
+    color: var(--accent-text);
     font-size: 1.05rem;
     padding: 0.6rem 1.5rem;
 }
 
 #play-again-btn:hover:not(:disabled) {
-    background: #ffe04a;
+    background: var(--accent-hover);
 }
 
 #change-settings-btn {
@@ -723,7 +820,7 @@ button:disabled {
 
 /* Persistent amber ring around the knocking player's area */
 .has-knocked {
-    box-shadow: 0 0 0 2px #e07820, 0 0 14px rgba(220, 110, 0, 0.3);
+    box-shadow: var(--has-knocked-shadow);
     border-radius: 10px;
 }
 
@@ -769,10 +866,10 @@ button:disabled {
 }
 
 @keyframes knock-ring-pulse {
-    0%   { border-color: rgba(240, 150, 20, 0);   opacity: 0;   box-shadow: 0 0 0 0   rgba(240, 150, 20, 0); }
-    30%  { border-color: rgba(240, 150, 20, 0.9); opacity: 1;   box-shadow: 0 0 0 8px rgba(240, 150, 20, 0.35); }
-    70%  { border-color: rgba(240, 150, 20, 0.6); opacity: 0.8; box-shadow: 0 0 0 4px rgba(240, 150, 20, 0.2); }
-    100% { border-color: rgba(240, 150, 20, 0);   opacity: 0;   box-shadow: 0 0 0 0   rgba(240, 150, 20, 0); }
+    0%   { border-color: transparent;             opacity: 0;   box-shadow: none; }
+    30%  { border-color: var(--knock-ring-color); opacity: 1;   box-shadow: 0 0 0 8px var(--knock-ring-glow); }
+    70%  { border-color: var(--knock-ring-mid);   opacity: 0.8; box-shadow: 0 0 0 4px var(--knock-ring-fade); }
+    100% { border-color: transparent;             opacity: 0;   box-shadow: none; }
 }
 
 /* === Instant 31 Celebration Banner === */
@@ -781,7 +878,7 @@ button:disabled {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    background: linear-gradient(135deg, #ffd700, #ff8c00);
+    background: var(--instant31-gradient);
     color: #fff;
     font-size: 2rem;
     font-weight: bold;
@@ -803,9 +900,9 @@ button:disabled {
     width: 30px;
     height: 30px;
     border-radius: 50%;
-    background: rgba(240, 208, 96, 0.18);
-    border: 1.5px solid #f0d060;
-    color: #f0d060;
+    background: var(--accent-glass-18);
+    border: 1.5px solid var(--accent);
+    color: var(--accent);
     font-size: 1rem;
     font-weight: bold;
     font-family: 'Georgia', serif;
@@ -820,8 +917,79 @@ button:disabled {
 }
 
 #help-btn:hover {
-    background: rgba(240, 208, 96, 0.35);
+    background: var(--accent-glass-35);
     transform: none;
+}
+
+/* === Options Button & Panel === */
+.options-wrapper {
+    position: relative;
+    flex-shrink: 0;
+}
+
+#options-btn {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: var(--accent-glass-18);
+    border: 1.5px solid var(--accent);
+    color: var(--accent);
+    font-size: 1rem;
+    font-weight: bold;
+    padding: 0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: background 0.15s;
+    line-height: 1;
+}
+
+#options-btn:hover {
+    background: var(--accent-glass-35);
+    transform: none;
+}
+
+.options-panel {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    background: var(--panel-bg);
+    border: 1.5px solid var(--panel-border);
+    border-radius: 10px;
+    padding: 0.75rem 1rem;
+    min-width: 210px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6);
+    z-index: 500;
+}
+
+.options-panel.hidden {
+    display: none;
+}
+
+.options-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.options-row label {
+    color: #ccc;
+    font-size: 0.95rem;
+    white-space: nowrap;
+    font-weight: bold;
+}
+
+.options-row select {
+    font-size: 0.92rem;
+    padding: 0.3rem 0.5rem;
+    border-radius: 5px;
+    border: 1px solid #888;
+    background: #f5f5f5;
+    color: #111;
+    cursor: pointer;
+    flex: 1;
 }
 
 /* === Tutorial Overlay (click blocker) === */
@@ -845,7 +1013,7 @@ button:disabled {
     pointer-events: none;
     border-radius: 10px;
     box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.65);
-    outline: 3px solid #f0d060;
+    outline: 3px solid var(--accent);
     outline-offset: 3px;
     transition: top 0.22s ease, left 0.22s ease, width 0.22s ease, height 0.22s ease;
 }
@@ -858,8 +1026,8 @@ button:disabled {
 .tutorial-bubble {
     position: fixed;
     z-index: 1502;
-    background: #1a3a1a;
-    border: 2px solid #5a9a5a;
+    background: var(--panel-bg);
+    border: 2px solid var(--panel-border);
     border-radius: 12px;
     padding: 1.1rem 1.3rem;
     width: 300px;
@@ -912,15 +1080,15 @@ button:disabled {
 }
 
 #tutorial-next-btn {
-    background: #f0d060;
-    border-color: #c8a800;
-    color: #333;
+    background: var(--accent);
+    border-color: var(--accent-dark);
+    color: var(--accent-text);
     font-size: 0.88rem;
     padding: 0.3rem 0.85rem;
 }
 
 #tutorial-next-btn:hover:not(:disabled) {
-    background: #ffe04a;
+    background: var(--accent-hover);
 }
 
 #tutorial-skip-btn {

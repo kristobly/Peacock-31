@@ -62,6 +62,36 @@ function isRedSuit(suit) {
     return suit === '♥' || suit === '♦';
 }
 
+// Build a sorted view-model for Player 1's hand display.
+// Returns [{card, originalIndex}] sorted: best-suit cards first (value desc),
+// then remaining cards (value desc). originalIndex refers to position in gameState hand.
+function sortPlayerHand(hand) {
+    // Compute suit totals
+    const suitTotals = {};
+    for (const card of hand) {
+        suitTotals[card.suit] = (suitTotals[card.suit] || 0) + cardValue(card);
+    }
+    // Deterministic tiebreak: ♠ > ♥ > ♦ > ♣
+    const SUIT_PRIORITY = ['♠', '♥', '♦', '♣'];
+    let bestSuit = null;
+    let bestTotal = -1;
+    for (const suit of SUIT_PRIORITY) {
+        const total = suitTotals[suit] || 0;
+        if (total > bestTotal) {
+            bestTotal = total;
+            bestSuit = suit;
+        }
+    }
+    const viewModel = hand.map((card, originalIndex) => ({ card, originalIndex }));
+    viewModel.sort((a, b) => {
+        const aIsBest = a.card.suit === bestSuit;
+        const bIsBest = b.card.suit === bestSuit;
+        if (aIsBest !== bIsBest) return aIsBest ? -1 : 1;
+        return cardValue(b.card) - cardValue(a.card);
+    });
+    return viewModel;
+}
+
 function cardFaceHtml(card) {
     return `<span class="card-corner top-left">${card.rank}<br>${card.suit}</span>` +
            `<span class="card-center-pip">${card.suit}</span>` +
@@ -340,10 +370,11 @@ function render() {
         playerQuartersEl.innerHTML = chipsHtml + ` <span style="color:#ddd;font-size:0.95rem;">${q} quarter${q !== 1 ? 's' : ''}</span>`;
     }
 
-    // Player 1's hand as clickable card buttons
+    // Player 1's hand as clickable card buttons, sorted best-suit first
     const hand = gameState.players[0].hand;
     playerHandEl.innerHTML = '';
-    hand.forEach((card, index) => {
+    const handView = sortPlayerHand(hand);
+    handView.forEach(({ card, originalIndex }) => {
         const btn = document.createElement('button');
         btn.innerHTML = cardFaceHtml(card);
         btn.className = 'card-btn' + (isRedSuit(card.suit) ? ' red-suit' : '');
@@ -355,10 +386,10 @@ function render() {
         btn.addEventListener('click', async () => {
             if (isAutoPlaying || animationInProgress) return;
             isAutoPlaying = true;
-            const discarded = hand[index];
+            const discarded = hand[originalIndex];
             const anim = animateCardMove(btn, discardTopEl, { isBack: false, card: discarded });
             showAction(0, `Discarded ${cardLabel(discarded)}`);
-            const success = discardCard(gameState, index);
+            const success = discardCard(gameState, originalIndex);
             await anim;
             if (success) {
                 setLastAction(`Player 1 discarded ${cardLabel(discarded)}`);
@@ -765,6 +796,43 @@ changeSettingsBtn.addEventListener('click', () => {
 
 // Initial render
 render();
+
+// === Theme Management ===
+const THEME_LS_KEY = 'peacock31_theme';
+const optionsBtnEl = document.getElementById('options-btn');
+const optionsPanelEl = document.getElementById('options-panel');
+const themeSelectEl = document.getElementById('theme-select');
+
+function applyTheme(theme) {
+    document.body.classList.remove('theme-michigan-midnight', 'theme-neon-arcade');
+    if (theme === 'michigan-midnight') {
+        document.body.classList.add('theme-michigan-midnight');
+    } else if (theme === 'neon-arcade') {
+        document.body.classList.add('theme-neon-arcade');
+    }
+    // 'vegas-felt' is the default (:root), no class needed
+}
+
+const storedTheme = localStorage.getItem(THEME_LS_KEY) || 'vegas-felt';
+applyTheme(storedTheme);
+themeSelectEl.value = storedTheme;
+
+optionsBtnEl.addEventListener('click', (e) => {
+    e.stopPropagation();
+    optionsPanelEl.classList.toggle('hidden');
+});
+
+themeSelectEl.addEventListener('change', () => {
+    const theme = themeSelectEl.value;
+    applyTheme(theme);
+    localStorage.setItem(THEME_LS_KEY, theme);
+});
+
+document.addEventListener('click', (e) => {
+    if (!optionsPanelEl.contains(e.target) && e.target !== optionsBtnEl) {
+        optionsPanelEl.classList.add('hidden');
+    }
+});
 
 // === Tutorial / Coach Marks ===
 const TUTORIAL_LS_KEY = 'peacock31_tutorialSeen';
