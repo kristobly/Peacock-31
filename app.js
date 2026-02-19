@@ -520,7 +520,8 @@ function render() {
 
     drawStockBtn.disabled = isAutoPlaying || isGameOver || !(isPlayer1Turn && isDrawPhase && gameState.stock.length > 0 && !isRoundOver);
     drawDiscardBtn.disabled = isAutoPlaying || isGameOver || !(isPlayer1Turn && isDrawPhase && gameState.discard.length > 0 && !isRoundOver);
-    knockBtn.disabled = isAutoPlaying || isGameOver || !(isPlayer1Turn && isDrawPhase && !gameState.knocked && !isRoundOver);
+    // Knock is disabled while Hammer is still available — player must decide hammer first
+    knockBtn.disabled = isAutoPlaying || isGameOver || !(isPlayer1Turn && isDrawPhase && !gameState.knocked && !isRoundOver && !gameState.hammerAvailable);
     hammerBtn.disabled = isAutoPlaying || isGameOver || !(isPlayer1Turn && isDrawPhase && gameState.hammerAvailable && !isRoundOver);
     nextRoundBtn.disabled = isAutoPlaying || isGameOver || !isRoundOver;
 
@@ -804,11 +805,15 @@ const optionsPanelEl = document.getElementById('options-panel');
 const themeSelectEl = document.getElementById('theme-select');
 
 function applyTheme(theme) {
-    document.body.classList.remove('theme-michigan-midnight', 'theme-neon-arcade');
+    document.body.classList.remove('theme-michigan-midnight', 'theme-neon-arcade', 'theme-brennassee', 'theme-vivi-bee-bow');
     if (theme === 'michigan-midnight') {
         document.body.classList.add('theme-michigan-midnight');
     } else if (theme === 'neon-arcade') {
         document.body.classList.add('theme-neon-arcade');
+    } else if (theme === 'brennassee') {
+        document.body.classList.add('theme-brennassee');
+    } else if (theme === 'vivi-bee-bow') {
+        document.body.classList.add('theme-vivi-bee-bow');
     }
     // 'vegas-felt' is the default (:root), no class needed
 }

@@ -63,36 +63,159 @@ body.theme-michigan-midnight {
     --accent-glass-35: rgba(255, 203, 5, 0.35);
 }
 
-/* --- Neon Arcade (dark + neon cyan glow) --- */
+/* --- Neon Arcade (pure black + neon pink/yellow/blue) --- */
 body.theme-neon-arcade {
-    --page-bg: #060a0f;
-    --table-felt: #1b2e45;
-    --table-border: #0e1e2e;
-    --accent: #00e5cc;
-    --accent-dark: #00b8a3;
-    --accent-hover: #00ffcc;
-    --accent-text: #001a17;
-    --card-back-bg: #150028;
-    --card-back-text: #e040ff;
-    --panel-bg: #0d1520;
-    --panel-border: #00e5cc;
-    --hammer-bg: #1a0033;
-    --hammer-border: #7700cc;
-    --hammer-text: #e040ff;
-    --hammer-hover-bg: #220044;
-    --knock-bg: #001a0d;
-    --knock-border: #009944;
-    --knock-hover-bg: #002a15;
-    --active-glow-shadow: 0 0 0 3px #00e5cc, 0 0 18px rgba(0, 229, 204, 0.45);
-    --pile-hover-shadow: 0 0 0 3px #00e5cc, 3px 8px 18px rgba(0, 0, 0, 0.65);
-    --has-knocked-shadow: 0 0 0 2px #00e5cc, 0 0 14px rgba(0, 229, 204, 0.3);
-    --instant31-gradient: linear-gradient(135deg, #e040ff, #00e5cc);
-    --knock-ring-color: rgba(0, 229, 204, 0.9);
-    --knock-ring-glow: rgba(0, 229, 204, 0.35);
-    --knock-ring-mid: rgba(0, 229, 204, 0.6);
-    --knock-ring-fade: rgba(0, 229, 204, 0.2);
-    --accent-glass-18: rgba(0, 229, 204, 0.18);
-    --accent-glass-35: rgba(0, 229, 204, 0.35);
+    --page-bg: #000000;
+    --table-felt: #0a0008;
+    --table-border: #440055;
+    --accent: #ffff00;
+    --accent-dark: #cccc00;
+    --accent-hover: #ffff55;
+    --accent-text: #000;
+    --card-back-bg: #0d0020;
+    --card-back-text: #ff00cc;
+    --panel-bg: #050008;
+    --panel-border: #ff00cc;
+    --hammer-bg: #00110a;
+    --hammer-border: #00ff88;
+    --hammer-text: #00ff88;
+    --hammer-hover-bg: #001a10;
+    --knock-bg: #160000;
+    --knock-border: #ff2244;
+    --knock-hover-bg: #220000;
+    --active-glow-shadow: 0 0 0 3px #ffff00, 0 0 20px rgba(255, 255, 0, 0.55);
+    --pile-hover-shadow: 0 0 0 3px #ff00cc, 3px 8px 18px rgba(0, 0, 0, 0.85);
+    --has-knocked-shadow: 0 0 0 2px #ff00cc, 0 0 16px rgba(255, 0, 204, 0.45);
+    --instant31-gradient: linear-gradient(135deg, #ff00cc, #ffff00);
+    --knock-ring-color: rgba(255, 0, 204, 0.9);
+    --knock-ring-glow: rgba(255, 0, 204, 0.4);
+    --knock-ring-mid: rgba(255, 0, 204, 0.6);
+    --knock-ring-fade: rgba(255, 0, 204, 0.2);
+    --accent-glass-18: rgba(255, 255, 0, 0.18);
+    --accent-glass-35: rgba(255, 255, 0, 0.35);
+}
+
+/* Neon Arcade: card face neon color overrides (black suits → neon blue, red suits → neon pink) */
+body.theme-neon-arcade .card-btn {
+    border-color: #ff00cc;
+    box-shadow: 0 0 8px rgba(255, 0, 204, 0.35), 3px 6px 12px rgba(0, 0, 0, 0.55);
+    color: #0044ee;
+}
+body.theme-neon-arcade .card-btn.red-suit {
+    color: #ee0077;
+}
+body.theme-neon-arcade .card-btn:hover:not(:disabled) {
+    border-color: #ff44ff;
+    box-shadow: 0 0 18px rgba(255, 0, 255, 0.5), 3px 14px 22px rgba(0, 0, 0, 0.65);
+}
+body.theme-neon-arcade .pile-card.card-face {
+    border-color: #ff00cc;
+    color: #0044ee;
+}
+body.theme-neon-arcade .pile-card.card-face.red-suit {
+    color: #ee0077;
+}
+body.theme-neon-arcade .card-face-sm {
+    border-color: #ff00cc;
+    color: #0044ee;
+}
+body.theme-neon-arcade .card-face-sm.red-suit {
+    color: #ee0077;
+}
+body.theme-neon-arcade .knock-badge {
+    background: #cc0099;
+}
+body.theme-neon-arcade .round-loser {
+    box-shadow: 0 0 0 3px #ff0044, 0 0 22px rgba(255, 0, 68, 0.6) !important;
+}
+body.theme-neon-arcade .round-loser::before {
+    background: #ff0044;
+}
+
+/* --- Brennassee (Tennessee orange + black) --- */
+body.theme-brennassee {
+    --page-bg: #080400;
+    --table-felt: #130900;
+    --table-border: #2d1500;
+    --accent: #FF8200;
+    --accent-dark: #cc6900;
+    --accent-hover: #ff9a33;
+    --accent-text: #fff;
+    --card-back-bg: #130900;
+    --card-back-text: #FF8200;
+    --panel-bg: #0a0500;
+    --panel-border: #FF8200;
+    --hammer-bg: #0d0700;
+    --hammer-border: #FF8200;
+    --hammer-text: #FF8200;
+    --hammer-hover-bg: #181000;
+    --knock-bg: #0d0700;
+    --knock-border: #ff5500;
+    --knock-hover-bg: #181000;
+    --active-glow-shadow: 0 0 0 3px #FF8200, 0 0 18px rgba(255, 130, 0, 0.5);
+    --pile-hover-shadow: 0 0 0 3px #FF8200, 3px 8px 18px rgba(0, 0, 0, 0.75);
+    --has-knocked-shadow: 0 0 0 2px #FF8200, 0 0 14px rgba(255, 130, 0, 0.4);
+    --instant31-gradient: linear-gradient(135deg, #FF8200, #ffdd00);
+    --knock-ring-color: rgba(255, 130, 0, 0.9);
+    --knock-ring-glow: rgba(255, 130, 0, 0.4);
+    --knock-ring-mid: rgba(255, 130, 0, 0.6);
+    --knock-ring-fade: rgba(255, 130, 0, 0.2);
+    --accent-glass-18: rgba(255, 130, 0, 0.18);
+    --accent-glass-35: rgba(255, 130, 0, 0.35);
+}
+
+body.theme-brennassee .knock-badge {
+    background: #FF8200;
+    color: #fff;
+}
+
+body.theme-brennassee .card-back::after,
+body.theme-brennassee .card-back-sm::after {
+    content: 'BB';
+}
+
+/* --- Vivi-Bee Bow (rainbow + bright) --- */
+body.theme-vivi-bee-bow {
+    --page-bg: #050010;
+    --table-felt: #0d001f;
+    --table-border: #8800dd;
+    --accent: #ff69b4;
+    --accent-dark: #cc2288;
+    --accent-hover: #ff99dd;
+    --accent-text: #fff;
+    --card-back-bg: #001833;
+    --card-back-text: #ffff00;
+    --panel-bg: #08001a;
+    --panel-border: #ff69b4;
+    --hammer-bg: #001a05;
+    --hammer-border: #00ee66;
+    --hammer-text: #00ee66;
+    --hammer-hover-bg: #002a08;
+    --knock-bg: #1a0600;
+    --knock-border: #ff8800;
+    --knock-hover-bg: #251000;
+    --active-glow-shadow: 0 0 0 3px #ffff00, 0 0 18px rgba(255, 255, 0, 0.5);
+    --pile-hover-shadow: 0 0 0 3px #ff69b4, 3px 8px 18px rgba(0, 0, 0, 0.75);
+    --has-knocked-shadow: 0 0 0 2px #ff8800, 0 0 14px rgba(255, 136, 0, 0.4);
+    --instant31-gradient: linear-gradient(135deg, #ff0055, #ff8800, #ffff00, #00cc66, #0088ff, #cc00ff);
+    --knock-ring-color: rgba(255, 136, 0, 0.9);
+    --knock-ring-glow: rgba(255, 136, 0, 0.4);
+    --knock-ring-mid: rgba(255, 136, 0, 0.6);
+    --knock-ring-fade: rgba(255, 136, 0, 0.2);
+    --accent-glass-18: rgba(255, 105, 180, 0.18);
+    --accent-glass-35: rgba(255, 105, 180, 0.35);
+}
+
+/* Vivi-Bee Bow: rainbow quarter chips */
+body.theme-vivi-bee-bow .chip {
+    background: conic-gradient(from 0deg, #ff4444, #ff8800, #ffee00, #44cc44, #4488ff, #aa44ff, #ff4444);
+    border-color: rgba(255, 255, 255, 0.55);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+
+body.theme-vivi-bee-bow .knock-badge {
+    background: #ff8800;
+    color: #fff;
 }
 
 /* === Reset & Base === */
