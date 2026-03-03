@@ -11,6 +11,7 @@ const drawDiscardBtn = document.getElementById('draw-discard-btn');
 const knockBtn = document.getElementById('knock-btn');
 const hammerBtn = document.getElementById('hammer-btn');
 const nextRoundBtn = document.getElementById('next-round-btn');
+const undoBtn = document.getElementById('undo-btn');
 
 // DOM elements - game display
 const currentPlayerEl = document.getElementById('current-player');
@@ -46,10 +47,21 @@ let isAutoPlaying = false;
 const AI_DELAY_BONUS_MS = 1000;
 
 // Match-level stats (reset on each new match)
-function initMatchStats() {
-    return { roundsPlayed: 0, hammersUsed: 0, instant31Count: 0, lastRoundLosers: [] };
+function initMatchStats(numPlayers = 0) {
+    return {
+        roundsPlayed: 0,
+        hammersUsed: 0,
+        instant31Count: 0,
+        lastRoundLosers: [],
+        playerRoundScores: Array.from({ length: numPlayers }, () => []),
+        highestLosingScore: null,
+        lowestWinningScore: null
+    };
 }
 let matchStats = initMatchStats();
+
+// Undo state: snapshot taken just before Player 1 draws, cleared on discard or turn change
+let undoSnapshot = null;
 
 // Set DEBUG = true to log AI temperament and decision math to the console.
 const DEBUG = false;
@@ -272,8 +284,15 @@ function showMatchOverOverlay() {
         ? `It's a tie — everyone is out!`
         : `Winner: Player ${gameState.winnerIndex + 1}`;
 
-    // Player table
-    let tableHtml = '<thead><tr><th>Player</th><th>Quarters</th><th>Status</th></tr></thead><tbody>';
+    // Compute average scores per player
+    const avgScores = (matchStats.playerRoundScores || []).map(roundScores => {
+        if (!roundScores || roundScores.length === 0) return null;
+        const avg = roundScores.reduce((a, b) => a + b, 0) / roundScores.length;
+        return avg.toFixed(1);
+    });
+
+    // Player table with avg score column
+    let tableHtml = '<thead><tr><th>Player</th><th>Quarters</th><th>Avg Score</th><th>Status</th></tr></thead><tbody>';
     for (let i = 0; i < gameState.players.length; i++) {
         const p = gameState.players[i];
         const isWinner = !isTie && i === gameState.winnerIndex;
@@ -286,24 +305,26 @@ function showMatchOverOverlay() {
         } else {
             quartersHtml = '0';
         }
-        tableHtml += `<tr class="${rowClass}"><td>Player ${i + 1}</td><td>${quartersHtml}</td><td>${status}</td></tr>`;
+        const avg = (avgScores[i] !== undefined && avgScores[i] !== null) ? avgScores[i] : '—';
+        tableHtml += `<tr class="${rowClass}"><td>Player ${i + 1}</td><td>${quartersHtml}</td><td>${avg}</td><td>${status}</td></tr>`;
     }
     tableHtml += '</tbody>';
     matchPlayerTableEl.innerHTML = tableHtml;
 
     // Recap bullets
-    const lastLoserText = matchStats.lastRoundLosers.length > 0
-        ? matchStats.lastRoundLosers.join(', ') + ` lost a quarter in the final round`
-        : 'No losers in the final round';
-
     let recapHtml = '<ul>';
     recapHtml += `<li>Rounds played: <strong>${matchStats.roundsPlayed}</strong></li>`;
-    recapHtml += `<li>${lastLoserText}</li>`;
-    if (matchStats.hammersUsed > 0) {
-        recapHtml += `<li>The Hammer used: <strong>${matchStats.hammersUsed}</strong> time${matchStats.hammersUsed !== 1 ? 's' : ''}</li>`;
-    }
     if (matchStats.instant31Count > 0) {
-        recapHtml += `<li>Instant 31: <strong>${matchStats.instant31Count}</strong> time${matchStats.instant31Count !== 1 ? 's' : ''}</li>`;
+        recapHtml += `<li>Instant 31s: <strong>${matchStats.instant31Count}</strong></li>`;
+    }
+    if (matchStats.hammersUsed > 0) {
+        recapHtml += `<li>Hammers used: <strong>${matchStats.hammersUsed}</strong></li>`;
+    }
+    if (matchStats.highestLosingScore !== null) {
+        recapHtml += `<li>Highest losing hand: <strong>${matchStats.highestLosingScore}</strong></li>`;
+    }
+    if (matchStats.lowestWinningScore !== null) {
+        recapHtml += `<li>Lowest winning hand: <strong>${matchStats.lowestWinningScore}</strong></li>`;
     }
     recapHtml += '</ul>';
     matchRecapEl.innerHTML = recapHtml;
@@ -336,6 +357,7 @@ function render() {
         knockBtn.disabled = true;
         hammerBtn.disabled = true;
         nextRoundBtn.disabled = true;
+        undoBtn.disabled = true;
         stockDisplayEl.classList.remove('pile-clickable');
         discardTopEl.classList.remove('pile-clickable');
         startGameBtn.textContent = 'Start Game';
@@ -386,6 +408,7 @@ function render() {
         btn.addEventListener('click', async () => {
             if (isAutoPlaying || animationInProgress) return;
             isAutoPlaying = true;
+            undoSnapshot = null; // committing to this discard — clear undo
             const discarded = hand[originalIndex];
             const anim = animateCardMove(btn, discardTopEl, { isBack: false, card: discarded });
             showAction(0, `Discarded ${cardLabel(discarded)}`);
@@ -524,6 +547,8 @@ function render() {
     knockBtn.disabled = isAutoPlaying || isGameOver || !(isPlayer1Turn && isDrawPhase && !gameState.knocked && !isRoundOver && !gameState.hammerAvailable);
     hammerBtn.disabled = isAutoPlaying || isGameOver || !(isPlayer1Turn && isDrawPhase && gameState.hammerAvailable && !isRoundOver);
     nextRoundBtn.disabled = isAutoPlaying || isGameOver || !isRoundOver;
+    // Undo is available after Player 1 draws but before discarding (needDiscard phase only)
+    undoBtn.disabled = isAutoPlaying || isGameOver || isRoundOver || !undoSnapshot;
 
     stockDisplayEl.classList.toggle('pile-clickable', !drawStockBtn.disabled);
     discardTopEl.classList.toggle('pile-clickable', !drawDiscardBtn.disabled);
@@ -537,6 +562,7 @@ async function runOtherPlayersTurns() {
         return;
     }
 
+    undoSnapshot = null; // AI is now acting — undo is no longer available
     isAutoPlaying = true;
     render();
 
@@ -664,10 +690,13 @@ function logAITemperaments() {
 
 // Single start/restart handler — always starts a fresh game
 startGameBtn.addEventListener('click', () => {
+    // Confirm if a game is already in progress
+    if (gameState && !confirm('Restart the match?')) return;
     const numPlayers = parseInt(playerCountSelect.value, 10);
     gameState = startGame(numPlayers);
-    matchStats = initMatchStats();
+    matchStats = initMatchStats(numPlayers);
     isAutoPlaying = false;
+    undoSnapshot = null;
     hideMatchOverOverlay();
     hideInstant31Banner();
     setLastAction('');
@@ -681,12 +710,19 @@ startGameBtn.addEventListener('click', () => {
 drawStockBtn.addEventListener('click', async () => {
     if (isAutoPlaying || animationInProgress) return;
     isAutoPlaying = true;
+    // Snapshot state before drawing so Player 1 can undo
+    const snapHand = [...gameState.players[0].hand];
+    const snapStock = [...gameState.stock];
+    const snapDiscard = [...gameState.discard];
     const anim = animateCardMove(stockDisplayEl, playerHandEl, { isBack: true });
     showAction(0, 'Drew stock');
     const success = drawFromStock(gameState);
     await anim;
     isAutoPlaying = false;
     if (success) {
+        if (!gameState.roundOver) {
+            undoSnapshot = { hand: snapHand, stock: snapStock, discard: snapDiscard, drewFrom: 'stock' };
+        }
         setLastAction('Player 1 drew stock');
         if (gameState.roundOver && gameState.roundResultType === 'instant31') {
             showInstant31Banner(gameState.instant31WinnerIndex);
@@ -699,6 +735,10 @@ drawStockBtn.addEventListener('click', async () => {
 drawDiscardBtn.addEventListener('click', async () => {
     if (isAutoPlaying || animationInProgress) return;
     isAutoPlaying = true;
+    // Snapshot state before drawing so Player 1 can undo
+    const snapHand = [...gameState.players[0].hand];
+    const snapStock = [...gameState.stock];
+    const snapDiscard = [...gameState.discard];
     const topCard = getTopDiscard(gameState);
     const anim = animateCardMove(discardTopEl, playerHandEl, { isBack: false, card: topCard });
     showAction(0, `Drew discard ${cardLabel(topCard)}`);
@@ -706,6 +746,9 @@ drawDiscardBtn.addEventListener('click', async () => {
     await anim;
     isAutoPlaying = false;
     if (success) {
+        if (!gameState.roundOver) {
+            undoSnapshot = { hand: snapHand, stock: snapStock, discard: snapDiscard, drewFrom: 'discard' };
+        }
         setLastAction(`Player 1 drew discard ${cardLabel(topCard)}`);
         if (gameState.roundOver && gameState.roundResultType === 'instant31') {
             showInstant31Banner(gameState.instant31WinnerIndex);
@@ -721,6 +764,17 @@ stockDisplayEl.addEventListener('click', () => {
 
 discardTopEl.addEventListener('click', () => {
     if (!drawDiscardBtn.disabled) drawDiscardBtn.click();
+});
+
+undoBtn.addEventListener('click', () => {
+    if (!undoSnapshot || isAutoPlaying || animationInProgress) return;
+    gameState.players[0].hand = undoSnapshot.hand;
+    gameState.stock = undoSnapshot.stock;
+    gameState.discard = undoSnapshot.discard;
+    gameState.phase = 'needDraw';
+    undoSnapshot = null;
+    setLastAction('Player 1 undid draw');
+    render();
 });
 
 knockBtn.addEventListener('click', async () => {
@@ -741,12 +795,38 @@ hammerBtn.addEventListener('click', () => {
 
 nextRoundBtn.addEventListener('click', async () => {
     // Score and track stats before applying results
-    const { losers } = scoreRound(gameState);
+    const { scores, losers } = scoreRound(gameState);
     matchStats.roundsPlayed++;
     matchStats.lastRoundLosers = losers.map(i => `Player ${i + 1}`);
     if (gameState.roundResultType === 'hammer') matchStats.hammersUsed++;
     if (gameState.roundResultType === 'instant31') matchStats.instant31Count++;
 
+    // Track per-player round scores (only for players who participated this round)
+    const played = gameState.players.map(p => p.hand.length > 0);
+    for (let i = 0; i < gameState.players.length; i++) {
+        if (played[i]) {
+            if (!matchStats.playerRoundScores[i]) matchStats.playerRoundScores[i] = [];
+            matchStats.playerRoundScores[i].push(scores[i]);
+        }
+    }
+
+    // Track highest losing hand score across all rounds
+    for (const li of losers) {
+        if (matchStats.highestLosingScore === null || scores[li] > matchStats.highestLosingScore) {
+            matchStats.highestLosingScore = scores[li];
+        }
+    }
+
+    // Track lowest winning hand score (players who played and did NOT lose)
+    const playedIndices = gameState.players.map((_, i) => i).filter(i => played[i]);
+    const winners = playedIndices.filter(i => !losers.includes(i));
+    for (const wi of winners) {
+        if (matchStats.lowestWinningScore === null || scores[wi] < matchStats.lowestWinningScore) {
+            matchStats.lowestWinningScore = scores[wi];
+        }
+    }
+
+    undoSnapshot = null;
     applyRoundResults(gameState, losers);
     if (gameState.gameOver) {
         showMatchOverOverlay();
@@ -770,8 +850,9 @@ nextRoundBtn.addEventListener('click', async () => {
 playAgainBtn.addEventListener('click', async () => {
     const numPlayers = parseInt(playerCountSelect.value, 10);
     gameState = startGame(numPlayers);
-    matchStats = initMatchStats();
+    matchStats = initMatchStats(numPlayers);
     isAutoPlaying = false;
+    undoSnapshot = null;
     hideMatchOverOverlay();
     hideInstant31Banner();
     setLastAction('');
@@ -790,6 +871,7 @@ changeSettingsBtn.addEventListener('click', () => {
     gameState = null;
     matchStats = initMatchStats();
     isAutoPlaying = false;
+    undoSnapshot = null;
     hideMatchOverOverlay();
     setLastAction('');
     render();
@@ -804,18 +886,19 @@ const optionsBtnEl = document.getElementById('options-btn');
 const optionsPanelEl = document.getElementById('options-panel');
 const themeSelectEl = document.getElementById('theme-select');
 
+const ALL_THEME_IDS = [
+    'michigan-midnight', 'neon-arcade', 'brennassee', 'vivi-bee-bow',
+    'seasons-greetings', 'estados-unidos', 'el-tri'
+];
+
 function applyTheme(theme) {
-    document.body.classList.remove('theme-michigan-midnight', 'theme-neon-arcade', 'theme-brennassee', 'theme-vivi-bee-bow');
-    if (theme === 'michigan-midnight') {
-        document.body.classList.add('theme-michigan-midnight');
-    } else if (theme === 'neon-arcade') {
-        document.body.classList.add('theme-neon-arcade');
-    } else if (theme === 'brennassee') {
-        document.body.classList.add('theme-brennassee');
-    } else if (theme === 'vivi-bee-bow') {
-        document.body.classList.add('theme-vivi-bee-bow');
+    for (const t of ALL_THEME_IDS) {
+        document.body.classList.remove(`theme-${t}`);
     }
     // 'vegas-felt' is the default (:root), no class needed
+    if (theme !== 'vegas-felt') {
+        document.body.classList.add(`theme-${theme}`);
+    }
 }
 
 const storedTheme = localStorage.getItem(THEME_LS_KEY) || 'vegas-felt';

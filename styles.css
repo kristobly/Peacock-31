@@ -218,6 +218,132 @@ body.theme-vivi-bee-bow .knock-badge {
     color: #fff;
 }
 
+/* --- Seasons Greetings (Christmas: forest green + red + gold) --- */
+body.theme-seasons-greetings {
+    --page-bg: #0a1e0a;
+    --table-felt: #0d3b0d;
+    --table-border: #8b0000;
+    --accent: #ffd700;
+    --accent-dark: #cc9900;
+    --accent-hover: #ffee55;
+    --accent-text: #1a0a00;
+    --card-back-bg: #8b0000;
+    --card-back-text: #ffd700;
+    --panel-bg: #081408;
+    --panel-border: #cc0000;
+    --hammer-bg: #0a2a0a;
+    --hammer-border: #ffd700;
+    --hammer-text: #ffd700;
+    --hammer-hover-bg: #0d3a0d;
+    --knock-bg: #1a0000;
+    --knock-border: #cc3333;
+    --knock-hover-bg: #220000;
+    --active-glow-shadow: 0 0 0 3px #ffd700, 0 0 18px rgba(255, 215, 0, 0.5);
+    --pile-hover-shadow: 0 0 0 3px #8b0000, 3px 8px 18px rgba(0, 0, 0, 0.75);
+    --has-knocked-shadow: 0 0 0 2px #cc3333, 0 0 14px rgba(200, 50, 50, 0.4);
+    --instant31-gradient: linear-gradient(135deg, #cc0000, #ffd700, #cc0000);
+    --knock-ring-color: rgba(200, 50, 50, 0.9);
+    --knock-ring-glow: rgba(200, 50, 50, 0.35);
+    --knock-ring-mid: rgba(200, 50, 50, 0.6);
+    --knock-ring-fade: rgba(200, 50, 50, 0.2);
+    --accent-glass-18: rgba(255, 215, 0, 0.18);
+    --accent-glass-35: rgba(255, 215, 0, 0.35);
+}
+
+body.theme-seasons-greetings .card-back::after,
+body.theme-seasons-greetings .card-back-sm::after {
+    content: '★';
+}
+
+body.theme-seasons-greetings .knock-badge {
+    background: #8b0000;
+    color: #ffd700;
+}
+
+/* --- Estados Unidos (4th of July: navy + red + white) --- */
+body.theme-estados-unidos {
+    --page-bg: #07071f;
+    --table-felt: #0d1a4a;
+    --table-border: #cc0000;
+    --accent: #f0f0ff;
+    --accent-dark: #ccccdd;
+    --accent-hover: #ffffff;
+    --accent-text: #00003a;
+    --card-back-bg: #00003a;
+    --card-back-text: #f0f0ff;
+    --panel-bg: #05050f;
+    --panel-border: #cc0000;
+    --hammer-bg: #07071f;
+    --hammer-border: #f0f0ff;
+    --hammer-text: #f0f0ff;
+    --hammer-hover-bg: #101038;
+    --knock-bg: #1a0000;
+    --knock-border: #ff3333;
+    --knock-hover-bg: #220000;
+    --active-glow-shadow: 0 0 0 3px #f0f0ff, 0 0 18px rgba(240, 240, 255, 0.4);
+    --pile-hover-shadow: 0 0 0 3px #cc0000, 3px 8px 18px rgba(0, 0, 0, 0.75);
+    --has-knocked-shadow: 0 0 0 2px #cc0000, 0 0 14px rgba(200, 0, 0, 0.4);
+    --instant31-gradient: linear-gradient(135deg, #cc0000 33%, #f0f0ff 50%, #00003a 67%);
+    --knock-ring-color: rgba(220, 30, 30, 0.9);
+    --knock-ring-glow: rgba(220, 30, 30, 0.35);
+    --knock-ring-mid: rgba(220, 30, 30, 0.6);
+    --knock-ring-fade: rgba(220, 30, 30, 0.2);
+    --accent-glass-18: rgba(240, 240, 255, 0.18);
+    --accent-glass-35: rgba(240, 240, 255, 0.35);
+}
+
+body.theme-estados-unidos .card-back::after,
+body.theme-estados-unidos .card-back-sm::after {
+    content: '★';
+}
+
+body.theme-estados-unidos .knock-badge {
+    background: #cc0000;
+    color: #fff;
+}
+
+/* --- El Tri (Mexican flag: green + white + red) --- */
+body.theme-el-tri {
+    --page-bg: #002a10;
+    --table-felt: #003d18;
+    --table-border: #cc0000;
+    --accent: #f8f8f8;
+    --accent-dark: #cccccc;
+    --accent-hover: #ffffff;
+    --accent-text: #002a10;
+    --card-back-bg: #006633;
+    --card-back-text: #f8f8f8;
+    --panel-bg: #001a0a;
+    --panel-border: #f8f8f8;
+    --hammer-bg: #002a10;
+    --hammer-border: #f8f8f8;
+    --hammer-text: #f8f8f8;
+    --hammer-hover-bg: #003518;
+    --knock-bg: #1a0000;
+    --knock-border: #cc0000;
+    --knock-hover-bg: #220000;
+    --active-glow-shadow: 0 0 0 3px #f8f8f8, 0 0 18px rgba(248, 248, 248, 0.35);
+    --pile-hover-shadow: 0 0 0 3px #cc0000, 3px 8px 18px rgba(0, 0, 0, 0.75);
+    --has-knocked-shadow: 0 0 0 2px #cc0000, 0 0 14px rgba(200, 0, 0, 0.4);
+    --instant31-gradient: linear-gradient(135deg, #006633 33%, #f8f8f8 50%, #cc0000 67%);
+    --knock-ring-color: rgba(220, 30, 30, 0.9);
+    --knock-ring-glow: rgba(220, 30, 30, 0.35);
+    --knock-ring-mid: rgba(220, 30, 30, 0.6);
+    --knock-ring-fade: rgba(220, 30, 30, 0.2);
+    --accent-glass-18: rgba(248, 248, 248, 0.18);
+    --accent-glass-35: rgba(248, 248, 248, 0.35);
+}
+
+body.theme-el-tri .card-back::after,
+body.theme-el-tri .card-back-sm::after {
+    content: 'MX';
+}
+
+body.theme-el-tri .knock-badge {
+    background: #cc0000;
+    color: #fff;
+}
+
 /* === Reset & Base === */
 *, *::before, *::after {
     box-sizing: border-box;
@@ -632,6 +758,18 @@ button:disabled {
 
 #knock-btn:hover:not(:disabled) {
     background: var(--knock-hover-bg);
+}
+
+#undo-btn {
+    background: rgba(255, 255, 255, 0.09);
+    border-color: rgba(255, 255, 255, 0.3);
+    color: #bbb;
+    font-weight: normal;
+}
+
+#undo-btn:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.18);
+    color: #eee;
 }
 
 #player-hand {
@@ -1262,6 +1400,11 @@ button:disabled {
     /* Bring piles a bit closer together; gap is still ample */
     #piles-zone {
         gap: 2.5rem;
+    }
+
+    /* Push Next Round away from Restart to reduce accidental taps */
+    #next-round-btn {
+        margin-left: 1.5rem;
     }
 }
 
